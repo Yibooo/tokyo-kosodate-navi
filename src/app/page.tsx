@@ -16,10 +16,10 @@ export default function HomePage() {
         {/* ヒーローセクション */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-sm font-medium px-4 py-1.5 rounded-full mb-5">
-            <span>🏙️</span> 東京23区 MVP対応中（5区）
+            <span>🏙️</span> 東京23区 全区対応
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
-            国・都・区の子育て支援を<br className="sm:hidden" />
+            国・都・23区の子育て支援を<br className="sm:hidden" />
             <span className="text-blue-600">まとめて</span>検索
           </h1>
           <p className="text-gray-500 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
@@ -35,9 +35,9 @@ export default function HomePage() {
 
         {/* 対応区バッジ */}
         <div className="mt-8 text-center">
-          <p className="text-xs text-gray-400 mb-3">現在対応している区</p>
+          <p className="text-xs text-gray-400 mb-3">現在対応しているエリア</p>
           <div className="flex flex-wrap justify-center gap-2">
-            {['港区', '品川区', '目黒区', '江東区', '江戸川区'].map(w => (
+            {['千代田区', '中央区', '港区', '新宿区', '文京区', '台東区', '墨田区', '江東区', '品川区', '目黒区', '大田区', '世田谷区', '渋谷区', '中野区', '杉並区', '豊島区', '北区', '荒川区', '板橋区', '練馬区', '足立区', '葛飾区', '江戸川区'].map(w => (
               <span key={w} className="text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1 rounded-full shadow-sm">
                 {w}
               </span>
