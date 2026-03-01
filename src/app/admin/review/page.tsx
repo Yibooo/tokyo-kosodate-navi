@@ -229,9 +229,6 @@ function LogsView({ logs }: { logs: ScrapeLog[] }) {
 // =====================
 // 制度カード
 // =====================
-const LAYER_LABELS: Record<string, string> = { national: '国', tokyo: '東京都', ward: '区' }
-const STATUS_COLORS: Record<string, string> = { draft: 'bg-yellow-100 text-yellow-800', approved: 'bg-green-100 text-green-800', rejected: 'bg-red-100 text-red-800' }
-
 function PolicyCard({ policy, onApprove, onReject, isLoading, showActions }: { policy: Policy; onApprove: () => void; onReject: () => void; isLoading: boolean; showActions: boolean }) {
   const [expanded, setExpanded] = useState(false)
   const condition = policy.policy_conditions?.[0]
