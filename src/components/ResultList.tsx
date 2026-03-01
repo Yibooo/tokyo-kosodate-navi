@@ -42,10 +42,19 @@ export default function ResultList({ tabs }: Props) {
     .sort((a, b) => b[1] - a[1])
     .map(([key]) => key)
 
-  // カテゴリでフィルタ
-  const displayItems = activeCategory === 'all'
-    ? currentLayerItems
-    : currentLayerItems.filter(p => (p.category ?? 'その他') === activeCategory)
+  // 全世帯給付 / 条件付き給付 の件数
+  const universalCount    = currentLayerItems.filter(p => p.income_max == null).length
+  const conditionalCount  = currentLayerItems.filter(p => p.income_max != null).length
+
+  // カテゴリ・給付種別でフィルタ
+  const displayItems =
+    activeCategory === '__universal__'
+      ? currentLayerItems.filter(p => p.income_max == null)
+      : activeCategory === '__conditional__'
+        ? currentLayerItems.filter(p => p.income_max != null)
+        : activeCategory === 'all'
+          ? currentLayerItems
+          : currentLayerItems.filter(p => (p.category ?? 'その他') === activeCategory)
 
   // カテゴリタブが変わったらリセット
   const handleLayerChange = (key: string) => {
@@ -73,9 +82,10 @@ export default function ResultList({ tabs }: Props) {
         ))}
       </div>
 
-      {/* カテゴリフィルター */}
-      {categories.length > 1 && (
+      {/* カテゴリ・給付種別フィルター */}
+      {categories.length > 0 && (
         <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+          {/* すべて */}
           <button
             onClick={() => setActiveCategory('all')}
             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
@@ -86,6 +96,39 @@ export default function ResultList({ tabs }: Props) {
           >
             すべて ({currentLayerItems.length})
           </button>
+
+          {/* 給付種別：全世帯給付 */}
+          {universalCount > 0 && (
+            <button
+              onClick={() => setActiveCategory('__universal__')}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition whitespace-nowrap ${
+                activeCategory === '__universal__'
+                  ? 'bg-green-600 text-white border-green-600'
+                  : 'bg-green-50 text-green-700 border-green-200 hover:border-green-400'
+              }`}
+            >
+              🌟 全世帯給付 ({universalCount})
+            </button>
+          )}
+
+          {/* 給付種別：条件付き給付 */}
+          {conditionalCount > 0 && (
+            <button
+              onClick={() => setActiveCategory('__conditional__')}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition whitespace-nowrap ${
+                activeCategory === '__conditional__'
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-amber-50 text-amber-700 border-amber-200 hover:border-amber-400'
+              }`}
+            >
+              📋 条件付き給付 ({conditionalCount})
+            </button>
+          )}
+
+          {/* セパレーター */}
+          <span className="flex-shrink-0 self-center text-gray-200 select-none">│</span>
+
+          {/* カテゴリ別 */}
           {categories.map(cat => (
             <button
               key={cat}

@@ -22,6 +22,7 @@ export interface MatchedPolicy {
   apply_url: string | null
   reason: string
   eligible: boolean
+  income_max: number | null   // 所得制限上限（万円）。null = 全世帯給付
 }
 
 export interface MatchResult {
@@ -180,7 +181,8 @@ export async function matchPolicies(input: UserInput): Promise<MatchResult> {
       apply_method:   p.apply_method,
       apply_url:      p.apply_url,
       reason,
-      eligible: true,
+      eligible:       true,
+      income_max:     (cond?.income_max_man_yen as number | null) ?? null,
     })
   }
 

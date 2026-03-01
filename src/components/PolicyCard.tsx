@@ -65,6 +65,16 @@ export default function PolicyCard({ policy, rank }: Props) {
               {catCfg.icon} {policy.category}
             </span>
           )}
+          {/* 給付条件バッジ */}
+          {policy.income_max == null ? (
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full border bg-green-50 text-green-700 border-green-200">
+              🌟 全世帯給付
+            </span>
+          ) : (
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+              📋 世帯年収{policy.income_max}万円以下
+            </span>
+          )}
         </div>
 
         {/* 制度名 */}
