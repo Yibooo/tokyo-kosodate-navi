@@ -1,13 +1,10 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { createServerClient } from '@/lib/supabase/server'
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
 export interface UserInput {
   ward: string
-  birthdate: string        // YYYY-MM-DD
-  birthOrder: number       // 1〜4（4以上）
-  incomeManYen: number     // 万円単位
+  birthdate: string     // YYYY-MM-DD
+  birthOrder: number    // 1〜4（4以上）
+  incomeManYen: number  // 万円単位
 }
 
 export interface MatchedPolicy {
@@ -17,12 +14,12 @@ export interface MatchedPolicy {
   ward: string | null
   summary: string
   description: string | null
-  monthly_amount: number      // 月額換算（0の場合は金額不定）
-  lump_amount: number | null  // 一時金
+  monthly_amount: number
+  lump_amount: number | null
   amount_note: string | null
   apply_method: string | null
   apply_url: string | null
-  reason: string              // 該当理由
+  reason: string
   eligible: boolean
 }
 
@@ -33,68 +30,105 @@ export interface MatchResult {
   user_summary: string
 }
 
-// 月齢を計算（負の値は出産前）
+// =============================================
+// ユーティリティ
+// =============================================
 function calcAgeMonths(birthdate: string): number {
   const birth = new Date(birthdate)
-  const now = new Date()
-  return (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth())
+  const now   = new Date()
+  return (now.getFullYear() - birth.getFullYear()) * 12
+       + (now.getMonth()    - birth.getMonth())
 }
 
-function ageLabel(ageMonths: number): string {
+export function ageLabel(ageMonths: number): string {
   if (ageMonths < 0) return `出産予定（${Math.abs(ageMonths)}ヶ月後）`
   if (ageMonths < 12) return `${ageMonths}ヶ月`
-  const years = Math.floor(ageMonths / 12)
-  const months = ageMonths % 12
-  return months > 0 ? `${years}歳${months}ヶ月` : `${years}歳`
+  const y = Math.floor(ageMonths / 12)
+  const m = ageMonths % 12
+  return m > 0 ? `${y}歳${m}ヶ月` : `${y}歳`
 }
 
-const MATCHING_PROMPT = (
-  ward: string,
+// =============================================
+// 制度別 金額計算ロジック
+// =============================================
+function calcMonthlyAmount(policy: Record<string, unknown>, ageMonths: number, birthOrder: number): number {
+  const name = policy.name as string
+
+  // 児童手当：年齢・出生順で金額が変動
+  if (name.includes('児童手当')) {
+    if (birthOrder >= 3) return 30000          // 第3子以上
+    if (ageMonths <= 35)  return 15000          // 0〜2歳
+    return 10000                                // 3歳〜高校生
+  }
+
+  return (policy.amount_monthly as number | null) ?? 0
+}
+
+function calcLumpAmount(policy: Record<string, unknown>, birthOrder: number): number | null {
+  const name = policy.name as string
+
+  // 品川区出産祝金：出生順で変動
+  if (name.includes('出産祝金')) {
+    if (birthOrder === 1) return 10000
+    if (birthOrder === 2) return 20000
+    return 100000   // 第3子以降
+  }
+
+  return (policy.amount_lump as number | null) ?? null
+}
+
+// =============================================
+// 対象条件チェック
+// =============================================
+function buildReason(ageMonths: number, birthOrder: number, income: number, cond: Record<string, unknown> | null): string {
+  const parts: string[] = []
+  const ageStr = ageLabel(ageMonths)
+
+  if (cond?.child_age_max_months != null) {
+    const maxYears = Math.floor((cond.child_age_max_months as number) / 12)
+    parts.push(`お子様が${ageStr}で${maxYears}歳未満の対象年齢内`)
+  } else {
+    parts.push(`お子様（${ageStr}）が対象年齢内`)
+  }
+
+  if (cond?.income_max_man_yen == null) {
+    parts.push('所得制限なし')
+  } else {
+    parts.push(`世帯年収${income}万円が所得制限（${cond.income_max_man_yen}万円）以内`)
+  }
+
+  return parts.join('・')
+}
+
+function isEligible(
+  policy: Record<string, unknown>,
+  cond: Record<string, unknown> | null,
   ageMonths: number,
-  ageStr: string,
   birthOrder: number,
   income: number,
-  policiesJson: string
-) => `あなたは日本の子育て支援制度のマッチングエンジンです。
-以下のユーザー情報と制度リストを照合し、該当する制度を判定してください。
+): boolean {
+  // 年齢チェック
+  if (cond?.child_age_min_months != null && ageMonths < (cond.child_age_min_months as number)) return false
+  if (cond?.child_age_max_months != null && ageMonths > (cond.child_age_max_months as number)) return false
 
-## ユーザー情報
-- 居住区: ${ward}
-- 子どもの年齢: ${ageStr}（月齢: ${ageMonths}ヶ月）
-- 出生順位: 第${birthOrder}子${birthOrder >= 4 ? '以上' : ''}
-- 世帯年収: ${income}万円
+  // 所得チェック
+  if (cond?.income_max_man_yen != null && income > (cond.income_max_man_yen as number)) return false
 
-## 判定対象の制度一覧
-${policiesJson}
+  // 出生順チェック
+  if (cond?.birth_order_min != null && birthOrder < (cond.birth_order_min as number)) return false
+  if (cond?.birth_order_max != null && birthOrder > (cond.birth_order_max as number)) return false
 
-## 判定ルール
-- national（国）・tokyo（東京都）の制度は居住区に関わらず全員対象
-- ward（区）の制度は、wardフィールドが居住区と一致する場合のみ対象
-- child_age_max_months を超えた子どもは非対象
-- income_max_man_yen がnullの場合は所得制限なし（全員対象）
-- 児童手当の月額は子の年齢・出生順で変わる: 0〜35ヶ月=15000円、36〜215ヶ月=10000円、第3子以降=30000円
-- 出産育児一時金は月齢0〜3ヶ月の場合のみ対象（出産直後）
-- 赤ちゃんファースト・誕生祝品等は月齢0〜12ヶ月など年齢制限に注意
-- 医療費助成は月額・一時金ともにnullだが、受給対象として含める（年間節約効果があるため）
+  return true
+}
 
-## 出力形式（JSON配列のみ。余分なテキスト不可）
-[
-  {
-    "policy_id": "制度のid",
-    "eligible": true,
-    "monthly_amount": 月額円数（整数、医療費助成などは0）,
-    "lump_amount": 一時金円数（整数またはnull）,
-    "reason": "該当理由を1文で（日本語）"
-  }
-]
-
-eligibleがfalseの制度は含めないこと。JSONのみ返すこと。`
-
+// =============================================
+// メインマッチング（ルールベース）
+// =============================================
 export async function matchPolicies(input: UserInput): Promise<MatchResult> {
   const supabase = createServerClient()
   const ageMonths = calcAgeMonths(input.birthdate)
 
-  // 承認済み制度を全件取得（国+都+指定区）
+  // 国・都・指定区の承認済み制度を全件取得
   const { data: policies, error } = await supabase
     .from('policies')
     .select('*, policy_conditions(*)')
@@ -102,72 +136,53 @@ export async function matchPolicies(input: UserInput): Promise<MatchResult> {
     .or(`layer.in.(national,tokyo),ward.eq.${input.ward}`)
     .order('layer')
 
-  if (error || !policies || policies.length === 0) {
+  if (error) {
+    console.error('[matcher] Supabase error:', error)
+    throw new Error('制度データの取得に失敗しました')
+  }
+
+  if (!policies || policies.length === 0) {
     return { matched: [], annual_total: 0, lump_total: 0, user_summary: '' }
   }
 
-  // Claude APIでマッチング
-  const policiesJson = JSON.stringify(
-    policies.map(p => ({
-      id: p.id,
-      layer: p.layer,
-      ward: p.ward,
-      name: p.name,
-      summary: p.summary,
-      amount_monthly: p.amount_monthly,
-      amount_lump: p.amount_lump,
-      amount_note: p.amount_note,
-      conditions: p.policy_conditions?.[0] ?? null,
-    })),
-    null, 2
-  )
+  // ルールベースマッチング
+  const matched: MatchedPolicy[] = []
 
-  const response = await anthropic.messages.create({
-    model: 'claude-opus-4-5',
-    max_tokens: 2048,
-    messages: [{
-      role: 'user',
-      content: MATCHING_PROMPT(input.ward, ageMonths, ageLabel(ageMonths), input.birthOrder, input.incomeManYen, policiesJson)
-    }]
+  for (const p of policies) {
+    const cond = (p.policy_conditions as Record<string, unknown>[])?.[0] ?? null
+
+    if (!isEligible(p as Record<string, unknown>, cond, ageMonths, input.birthOrder, input.incomeManYen)) continue
+
+    const monthly = calcMonthlyAmount(p as Record<string, unknown>, ageMonths, input.birthOrder)
+    const lump    = calcLumpAmount(p as Record<string, unknown>, input.birthOrder)
+    const reason  = buildReason(ageMonths, input.birthOrder, input.incomeManYen, cond)
+
+    matched.push({
+      policy_id:     p.id,
+      name:          p.name,
+      layer:         p.layer as 'national' | 'tokyo' | 'ward',
+      ward:          p.ward,
+      summary:       p.summary,
+      description:   p.description,
+      monthly_amount: monthly,
+      lump_amount:   lump,
+      amount_note:   p.amount_note,
+      apply_method:  p.apply_method,
+      apply_url:     p.apply_url,
+      reason,
+      eligible: true,
+    })
+  }
+
+  // 月額換算の大きい順にソート（一時金は月額0として比較）
+  matched.sort((a, b) => {
+    const aScore = (a.monthly_amount ?? 0) * 12 + (a.lump_amount ?? 0) * 0.1
+    const bScore = (b.monthly_amount ?? 0) * 12 + (b.lump_amount ?? 0) * 0.1
+    return bScore - aScore
   })
 
-  const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
-  const jsonMatch = text.match(/\[[\s\S]*\]/)
-  if (!jsonMatch) return { matched: [], annual_total: 0, lump_total: 0, user_summary: '' }
-
-  const llmResults = JSON.parse(jsonMatch[0]) as Array<{
-    policy_id: string; eligible: boolean; monthly_amount: number; lump_amount: number | null; reason: string
-  }>
-
-  // LLM結果とDBデータを結合
-  const matched: MatchedPolicy[] = llmResults
-    .filter(r => r.eligible)
-    .map(r => {
-      const p = policies.find(p => p.id === r.policy_id)
-      if (!p) return null
-      return {
-        policy_id: p.id,
-        name: p.name,
-        layer: p.layer as 'national' | 'tokyo' | 'ward',
-        ward: p.ward,
-        summary: p.summary,
-        description: p.description,
-        monthly_amount: r.monthly_amount,
-        lump_amount: r.lump_amount,
-        amount_note: p.amount_note,
-        apply_method: p.apply_method,
-        apply_url: p.apply_url,
-        reason: r.reason,
-        eligible: true,
-      }
-    })
-    .filter((p): p is MatchedPolicy => p !== null)
-    .sort((a, b) => (b.monthly_amount ?? 0) - (a.monthly_amount ?? 0))
-
-  // 合計金額計算
-  const annual_total = matched.reduce((sum, p) => sum + (p.monthly_amount ?? 0) * 12, 0)
-  const lump_total = matched.reduce((sum, p) => sum + (p.lump_amount ?? 0), 0)
-
+  const annual_total = matched.reduce((s, p) => s + (p.monthly_amount ?? 0) * 12, 0)
+  const lump_total   = matched.reduce((s, p) => s + (p.lump_amount ?? 0), 0)
   const user_summary = `${input.ward}・第${input.birthOrder}子・${ageLabel(ageMonths)}・世帯年収${input.incomeManYen}万円`
 
   return { matched, annual_total, lump_total, user_summary }

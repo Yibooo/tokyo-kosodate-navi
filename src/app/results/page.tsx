@@ -12,22 +12,21 @@ export default async function ResultsPage({ searchParams }: Props) {
   const { ward = '', birthdate = '', birth_order = '1', income = '500' } = params
 
   if (!ward || !birthdate) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 mb-4">検索条件が不足しています</p>
-          <Link href="/" className="text-blue-600 underline">トップに戻る</Link>
-        </div>
-      </div>
-    )
+    return <ErrorView message="検索条件が不足しています" />
   }
 
-  const result = await matchPolicies({
-    ward,
-    birthdate,
-    birthOrder: Number(birth_order),
-    incomeManYen: Number(income),
-  })
+  let result
+  try {
+    result = await matchPolicies({
+      ward,
+      birthdate,
+      birthOrder: Number(birth_order),
+      incomeManYen: Number(income),
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '不明なエラーが発生しました'
+    return <ErrorView message={msg} />
+  }
 
   const { matched, annual_total, lump_total, user_summary } = result
 
@@ -84,6 +83,21 @@ export default async function ResultsPage({ searchParams }: Props) {
       <footer className="text-center text-xs text-gray-400 py-8 border-t border-gray-100 mt-8">
         © 2026 子育て支援ナビ　|　最新情報は各自治体にご確認ください。
       </footer>
+    </div>
+  )
+}
+
+function ErrorView({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-slate-50 flex items-center justify-center px-4">
+      <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md w-full text-center">
+        <div className="text-4xl mb-4">⚠️</div>
+        <h2 className="font-bold text-gray-800 text-lg mb-2">エラーが発生しました</h2>
+        <p className="text-gray-500 text-sm mb-6">{message}</p>
+        <Link href="/" className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition inline-block">
+          トップに戻る
+        </Link>
+      </div>
     </div>
   )
 }
