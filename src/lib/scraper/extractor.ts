@@ -7,6 +7,7 @@ const anthropic = new Anthropic({
 
 export interface ExtractedPolicy {
   name: string
+  category: string | null
   summary: string
   description: string
   amount_monthly: number | null
@@ -41,10 +42,21 @@ URL: {url}
 複数の制度がある場合は、配列で返してください。
 子育てに無関係な情報は無視してください。
 
+categoryは以下から最も適切なものを1つ選んでください:
+- "給付金・手当" ... 定期的に現金が支給される制度（児童手当・養育手当等）
+- "一時金" ... 出産・入学等の一時的な現金給付（出産育児一時金・出産祝金等）
+- "医療費助成" ... 医療費を無料・軽減する制度
+- "保育・教育" ... 保育料・学費・幼稚園費用を軽減・無料化する制度
+- "育児サービス" ... ベビーシッター・産後ケア・訪問支援等のサービス補助
+- "雇用・休業" ... 育児休業給付金・産後パパ育休等の雇用支援
+- "税制優遇" ... 住宅ローン控除・扶養控除等の税制上の優遇措置
+- "物品・生活支援" ... 自転車・育児用品等の物品購入補助
+
 返すJSONの形式:
 [
   {
     "name": "制度名",
+    "category": "カテゴリ（上記から1つ）",
     "summary": "1〜2文の概要",
     "description": "詳細説明（申請要件・注意事項含む）",
     "amount_monthly": 月額金額（円、整数）またはnull,
@@ -79,8 +91,6 @@ export async function extractPoliciesFromHtml(params: {
   ward?: string
 }): Promise<ExtractedPolicy[]> {
   const { html, url, pageName, layer, ward } = params
-
-  // HTMLが長すぎる場合は先頭50,000文字に絞る
   const truncatedHtml = html.slice(0, 50000)
 
   const prompt = EXTRACTION_PROMPT
@@ -97,16 +107,18 @@ export async function extractPoliciesFromHtml(params: {
   })
 
   const text = response.content[0].type === 'text' ? response.content[0].text : ''
-
-  // JSONを抽出（マークダウンコードブロックに囲まれている場合も対応）
   const jsonMatch = text.match(/\[[\s\S]*\]/)
   if (!jsonMatch) {
-    console.warn(`[extractor] No JSON found in response for ${pageName}`)
+    console.warn(`[extractor] No JSON found for ${pageName}`)
     return []
   }
 
-  const parsed = JSON.parse(jsonMatch[0]) as ExtractedPolicy[]
-  return parsed
+  try {
+    return JSON.parse(jsonMatch[0]) as ExtractedPolicy[]
+  } catch (e) {
+    console.error(`[extractor] JSON parse error for ${pageName}:`, e)
+    return []
+  }
 }
 
 export async function fetchHtml(url: string): Promise<string> {
@@ -117,10 +129,6 @@ export async function fetchHtml(url: string): Promise<string> {
     },
     next: { revalidate: 0 },
   })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} for ${url}`)
-  }
-
+  if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`)
   return response.text()
 }
