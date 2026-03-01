@@ -4,26 +4,65 @@ import { useState } from 'react'
 import type { MatchedPolicy } from '@/lib/matcher'
 import PolicyCard from './PolicyCard'
 
-interface Tab {
+const CATEGORY_ICONS: Record<string, string> = {
+  '給付金・手当':   '💴',
+  '一時金':         '🎁',
+  '医療費助成':     '🏥',
+  '保育・教育':     '📚',
+  '育児サービス':   '🤱',
+  '雇用・休業':     '🏢',
+  '税制優遇':       '🏠',
+  '物品・生活支援': '🚲',
+}
+
+interface LayerTab {
   key: string
   label: string
   items: MatchedPolicy[]
 }
 
-export default function ResultList({ tabs }: { tabs: Tab[] }) {
-  const [activeTab, setActiveTab] = useState('all')
-  const current = tabs.find(t => t.key === activeTab) ?? tabs[0]
+interface Props {
+  tabs: LayerTab[]
+}
+
+export default function ResultList({ tabs }: Props) {
+  const [activeLayer, setActiveLayer] = useState('all')
+  const [activeCategory, setActiveCategory] = useState('all')
+
+  const currentLayerItems = (tabs.find(t => t.key === activeLayer) ?? tabs[0]).items
+
+  // カテゴリ一覧を動的に生成（件数順）
+  const categoryCount = currentLayerItems.reduce<Record<string, number>>((acc, p) => {
+    const cat = p.category ?? 'その他'
+    acc[cat] = (acc[cat] ?? 0) + 1
+    return acc
+  }, {})
+
+  const categories = Object.entries(categoryCount)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key]) => key)
+
+  // カテゴリでフィルタ
+  const displayItems = activeCategory === 'all'
+    ? currentLayerItems
+    : currentLayerItems.filter(p => (p.category ?? 'その他') === activeCategory)
+
+  // カテゴリタブが変わったらリセット
+  const handleLayerChange = (key: string) => {
+    setActiveLayer(key)
+    setActiveCategory('all')
+  }
 
   return (
     <>
-      {/* タブ */}
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+      {/* レイヤータブ（国/東京都/区） */}
+      <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
         {tabs.map(tab => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => handleLayerChange(tab.key)}
             className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition ${
-              activeTab === tab.key
+              activeLayer === tab.key
                 ? 'bg-blue-600 text-white border-blue-600 shadow'
                 : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
             }`}
@@ -34,12 +73,48 @@ export default function ResultList({ tabs }: { tabs: Tab[] }) {
         ))}
       </div>
 
-      {/* 制度カード一覧 */}
-      <div className="space-y-4">
-        {current.items.map((policy, idx) => (
-          <PolicyCard key={policy.policy_id} policy={policy} rank={idx + 1} />
-        ))}
-      </div>
+      {/* カテゴリフィルター */}
+      {categories.length > 1 && (
+        <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+          <button
+            onClick={() => setActiveCategory('all')}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+              activeCategory === 'all'
+                ? 'bg-gray-700 text-white border-gray-700'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+            }`}
+          >
+            すべて ({currentLayerItems.length})
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition whitespace-nowrap ${
+                activeCategory === cat
+                  ? 'bg-gray-700 text-white border-gray-700'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              {CATEGORY_ICONS[cat] ?? '📋'} {cat} ({categoryCount[cat]})
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 制度カード一覧（件数制限なし） */}
+      {displayItems.length === 0 ? (
+        <div className="text-center py-10 text-gray-400">
+          <div className="text-4xl mb-3">🔍</div>
+          <p>該当する制度がありません</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {displayItems.map((policy, idx) => (
+            <PolicyCard key={policy.policy_id} policy={policy} rank={idx + 1} />
+          ))}
+        </div>
+      )}
     </>
   )
 }

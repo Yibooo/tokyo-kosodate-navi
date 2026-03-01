@@ -9,6 +9,27 @@ const LAYER_CONFIG = {
   ward:     { label: '区', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
 }
 
+const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
+  '給付金・手当':  { icon: '💴', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  '一時金':        { icon: '🎁', color: 'bg-pink-50 text-pink-700 border-pink-200' },
+  '医療費助成':    { icon: '🏥', color: 'bg-red-50 text-red-700 border-red-200' },
+  '保育・教育':    { icon: '📚', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  '育児サービス':  { icon: '🤱', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  '雇用・休業':    { icon: '🏢', color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+  '税制優遇':      { icon: '🏠', color: 'bg-teal-50 text-teal-700 border-teal-200' },
+  '物品・生活支援': { icon: '🚲', color: 'bg-lime-50 text-lime-700 border-lime-200' },
+}
+
+// カテゴリ別のサービス説明テキスト
+const SERVICE_LABEL: Record<string, string> = {
+  '医療費助成':    '医療費が実質無料',
+  '保育・教育':    '保育料・学費を軽減',
+  '育児サービス':  '育児サービスを低負担で利用可',
+  '雇用・休業':    '給与の一部が支給',
+  '税制優遇':      '税額控除で実質的な節税',
+  '物品・生活支援': '購入費用の一部を補助',
+}
+
 function formatAmount(n: number) {
   return n.toLocaleString('ja-JP')
 }
@@ -21,8 +42,14 @@ interface Props {
 export default function PolicyCard({ policy, rank }: Props) {
   const [open, setOpen] = useState(false)
   const cfg = LAYER_CONFIG[policy.layer]
+  const catCfg = policy.category ? CATEGORY_CONFIG[policy.category] : null
   const hasMonthly = policy.monthly_amount > 0
   const hasLump    = policy.lump_amount != null && policy.lump_amount > 0
+  const isService  = !hasMonthly && !hasLump
+
+  const serviceLabel = isService
+    ? (policy.category ? SERVICE_LABEL[policy.category] ?? '現物給付・サービス支援' : '現物給付・サービス支援')
+    : null
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
@@ -33,6 +60,11 @@ export default function PolicyCard({ policy, rank }: Props) {
           <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${cfg.color}`}>
             {cfg.label}{policy.ward ? `・${policy.ward}` : ''}
           </span>
+          {catCfg && policy.category && (
+            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${catCfg.color}`}>
+              {catCfg.icon} {policy.category}
+            </span>
+          )}
         </div>
 
         {/* 制度名 */}
@@ -58,15 +90,22 @@ export default function PolicyCard({ policy, rank }: Props) {
               </div>
             </div>
           )}
-          {!hasMonthly && !hasLump && (
-            <div className="bg-gray-50 rounded-xl px-4 py-2 border border-gray-100">
-              <div className="text-xs text-gray-500 font-medium">現物給付・医療費無料</div>
-              <div className="text-gray-700 font-bold text-sm">実質的な節約効果あり</div>
+          {isService && (
+            <div className="bg-slate-50 rounded-xl px-4 py-2 border border-slate-200">
+              <div className="text-xs text-slate-500 font-medium">
+                {catCfg ? catCfg.icon : '✨'} {serviceLabel}
+              </div>
+              {policy.amount_note && (
+                <div className="text-slate-700 font-semibold text-xs mt-0.5 leading-snug max-w-xs">
+                  {policy.amount_note}
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {policy.amount_note && (
+        {/* 金額補足（現金給付系のみ表示） */}
+        {!isService && policy.amount_note && (
           <p className="text-xs text-gray-400 mb-3">📌 {policy.amount_note}</p>
         )}
 
