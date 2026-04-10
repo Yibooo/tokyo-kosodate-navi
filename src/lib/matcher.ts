@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server'
+import { SEED_POLICIES } from '@/lib/seed-policies'
 
 export interface UserInput {
   ward: string
@@ -135,20 +136,42 @@ function isEligible(
 // メインマッチング（ルールベース・DB参照型）
 // =============================================
 export async function matchPolicies(input: UserInput): Promise<MatchResult> {
-  const supabase = createServerClient()
   const ageMonths = calcAgeMonths(input.birthdate)
 
-  // 国・都・指定区の承認済み制度を全件取得（件数制限なし）
-  const { data: policies, error } = await supabase
-    .from('policies')
-    .select('*, policy_conditions(*)')
-    .eq('status', 'approved')
-    .or(`layer.in.(national,tokyo),ward.eq.${input.ward}`)
-    .order('layer')
+  // Supabase が設定されている場合は DB から取得、未設定またはエラー時は静的データにフォールバック
+  let policies: Record<string, unknown>[]
 
-  if (error) {
-    console.error('[matcher] Supabase error:', error)
-    throw new Error('制度データの取得に失敗しました')
+  const hasSupabase = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+
+  if (hasSupabase) {
+    try {
+      const supabase = createServerClient()
+      const { data, error } = await supabase
+        .from('policies')
+        .select('*, policy_conditions(*)')
+        .eq('status', 'approved')
+        .or(`layer.in.(national,tokyo),ward.eq.${input.ward}`)
+        .order('layer')
+
+      if (error) {
+        console.error('[matcher] Supabase error, falling back to seed data:', error)
+        policies = SEED_POLICIES.filter(
+          p => p.layer === 'national' || p.layer === 'tokyo' || p.ward === input.ward
+        ) as unknown as Record<string, unknown>[]
+      } else {
+        policies = (data ?? []) as unknown as Record<string, unknown>[]
+      }
+    } catch (err) {
+      console.error('[matcher] Supabase client error, falling back to seed data:', err)
+      policies = SEED_POLICIES.filter(
+        p => p.layer === 'national' || p.layer === 'tokyo' || p.ward === input.ward
+      ) as unknown as Record<string, unknown>[]
+    }
+  } else {
+    // Supabase 未設定: 静的シードデータを使用
+    policies = SEED_POLICIES.filter(
+      p => p.layer === 'national' || p.layer === 'tokyo' || p.ward === input.ward
+    ) as unknown as Record<string, unknown>[]
   }
 
   if (!policies || policies.length === 0) {
