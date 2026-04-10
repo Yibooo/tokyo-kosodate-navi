@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import SearchForm from '@/components/SearchForm'
 import { AREA_PREFECTURES } from '@/lib/areas'
 
@@ -34,6 +35,17 @@ export default function HomePage() {
           <SearchForm />
         </div>
 
+        {/* 比較モードへのリンク */}
+        <div className="mt-4 text-center">
+          <Link
+            href="/compare"
+            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md hover:shadow-lg"
+          >
+            <span>⚖️</span> 複数エリアを比較する →
+          </Link>
+          <p className="text-xs text-gray-400 mt-2">2〜3つのエリアの支援制度を並べて比較できます</p>
+        </div>
+
         {/* 対応エリアバッジ（都道府県別グループ表示） */}
         <div className="mt-8 text-center">
           <p className="text-xs text-gray-400 mb-4">現在対応しているエリア</p>
@@ -61,7 +73,7 @@ export default function HomePage() {
           {[
             { icon: '🔍', title: '3層一括検索', desc: '国・都道府県・市区町村の制度を一度の検索でまとめて確認' },
             { icon: '💰', title: '金額順ソート', desc: '受給額が大きい制度から順に表示。見落としゼロ' },
-            { icon: '⚖️', title: '比較モード（近日公開）', desc: '最大3エリアを並べて比較。引越し先選びにも活躍' },
+            { icon: '⚖️', title: 'エリア比較モード', desc: '最大3エリアを並べて比較。引越し先選びにも活躍' },
           ].map(f => (
             <div key={f.title} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm text-center">
               <div className="text-3xl mb-2">{f.icon}</div>
