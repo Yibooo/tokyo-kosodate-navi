@@ -1,4 +1,5 @@
 import SearchForm from '@/components/SearchForm'
+import { AREA_PREFECTURES } from '@/lib/areas'
 
 export default function HomePage() {
   return (
@@ -8,7 +9,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2">
           <span className="text-2xl">🍼</span>
           <span className="font-bold text-blue-700 text-lg">子育て支援ナビ</span>
-          <span className="text-xs text-gray-400 ml-1 hidden sm:inline">東京23区</span>
+          <span className="text-xs text-gray-400 ml-1 hidden sm:inline">首都圏対応</span>
         </div>
       </nav>
 
@@ -16,14 +17,14 @@ export default function HomePage() {
         {/* ヒーローセクション */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-sm font-medium px-4 py-1.5 rounded-full mb-5">
-            <span>🏙️</span> 東京23区 全区対応
+            <span>🏙️</span> 東京23区 + 近郊10市 対応
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
-            国・都・23区の子育て支援を<br className="sm:hidden" />
-            <span className="text-blue-600">まとめて</span>検索
+            国・都道府県・市区町村の<br className="sm:hidden" />
+            子育て支援を<span className="text-blue-600">まとめて</span>検索
           </h1>
           <p className="text-gray-500 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            居住区・子の生年月日・世帯年収を入力するだけ。<br />
+            居住エリア・子の生年月日・世帯年収を入力するだけ。<br />
             受給できる支援制度と金額を、金額の大きい順にまとめて表示します。
           </p>
         </div>
@@ -33,14 +34,24 @@ export default function HomePage() {
           <SearchForm />
         </div>
 
-        {/* 対応区バッジ */}
+        {/* 対応エリアバッジ（都道府県別グループ表示） */}
         <div className="mt-8 text-center">
-          <p className="text-xs text-gray-400 mb-3">現在対応しているエリア</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {['千代田区', '中央区', '港区', '新宿区', '文京区', '台東区', '墨田区', '江東区', '品川区', '目黒区', '大田区', '世田谷区', '渋谷区', '中野区', '杉並区', '豊島区', '北区', '荒川区', '板橋区', '練馬区', '足立区', '葛飾区', '江戸川区'].map(w => (
-              <span key={w} className="text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1 rounded-full shadow-sm">
-                {w}
-              </span>
+          <p className="text-xs text-gray-400 mb-4">現在対応しているエリア</p>
+          <div className="space-y-3 max-w-2xl mx-auto">
+            {AREA_PREFECTURES.map(pref => (
+              <div key={pref.name} className="flex flex-wrap items-center gap-2 justify-center">
+                <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full whitespace-nowrap">
+                  {pref.name}
+                </span>
+                {pref.cities.map(city => (
+                  <span
+                    key={city}
+                    className="text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1 rounded-full shadow-sm"
+                  >
+                    {city}
+                  </span>
+                ))}
+              </div>
             ))}
           </div>
         </div>
@@ -48,9 +59,9 @@ export default function HomePage() {
         {/* 特徴カード */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12">
           {[
-            { icon: '🔍', title: '3層一括検索', desc: '国・東京都・区の制度を一度の検索でまとめて確認' },
+            { icon: '🔍', title: '3層一括検索', desc: '国・都道府県・市区町村の制度を一度の検索でまとめて確認' },
             { icon: '💰', title: '金額順ソート', desc: '受給額が大きい制度から順に表示。見落としゼロ' },
-            { icon: '📋', title: '申請まで導く', desc: '各制度の申請方法・リンクをまとめて確認できる' },
+            { icon: '⚖️', title: '比較モード（近日公開）', desc: '最大3エリアを並べて比較。引越し先選びにも活躍' },
           ].map(f => (
             <div key={f.title} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm text-center">
               <div className="text-3xl mb-2">{f.icon}</div>

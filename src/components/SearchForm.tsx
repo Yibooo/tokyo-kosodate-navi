@@ -2,19 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AREA_PREFECTURES } from '@/lib/areas'
 
-const WARDS = [
-  // 都心部
-  '千代田区', '中央区', '港区', '新宿区', '文京区',
-  // 東部
-  '台東区', '墨田区', '江東区', '葛飾区', '江戸川区',
-  // 南部
-  '品川区', '目黒区', '大田区',
-  // 西部
-  '世田谷区', '渋谷区', '中野区', '杉並区',
-  // 北部
-  '豊島区', '北区', '荒川区', '板橋区', '練馬区', '足立区',
-]
 const BIRTH_ORDERS = [
   { value: '1', label: '第1子' },
   { value: '2', label: '第2子' },
@@ -22,9 +11,11 @@ const BIRTH_ORDERS = [
   { value: '4', label: '第4子以上' },
 ]
 const INCOME_STEPS = Array.from({ length: 16 }, (_, i) => i * 100) // 0〜1500万円
+void INCOME_STEPS // suppress unused warning
 
 export default function SearchForm() {
   const router = useRouter()
+  const [prefecture, setPrefecture] = useState('')
   const [ward, setWard] = useState('')
   const [birthdate, setBirthdate] = useState('')
   const [isExpected, setIsExpected] = useState(false)
@@ -33,9 +24,19 @@ export default function SearchForm() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // 選択中の都道府県に対応する市区町村リスト
+  const cities = AREA_PREFECTURES.find(p => p.name === prefecture)?.cities ?? []
+
+  function handlePrefectureChange(value: string) {
+    setPrefecture(value)
+    setWard('') // 都道府県変更時に市区町村リセット
+    setErrors(prev => ({ ...prev, prefecture: '', ward: '' }))
+  }
+
   function validate() {
     const e: Record<string, string> = {}
-    if (!ward) e.ward = '居住区を選択してください'
+    if (!prefecture) e.prefecture = '都道府県を選択してください'
+    if (!ward) e.ward = '区市町村を選択してください'
     if (!birthdate) e.birthdate = '生年月日（出産予定日）を入力してください'
     if (!birthOrder) e.birthOrder = '第何子かを選択してください'
     setErrors(e)
@@ -47,6 +48,7 @@ export default function SearchForm() {
     if (!validate()) return
     setLoading(true)
     const params = new URLSearchParams({
+      prefecture,
       ward,
       birthdate,
       birth_order: birthOrder,
@@ -59,18 +61,42 @@ export default function SearchForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* 居住区 */}
+
+      {/* 都道府県 */}
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-2">
-          🏠 お住まいの区
+          🗺️ お住まいの都道府県
+        </label>
+        <select
+          value={prefecture}
+          onChange={e => handlePrefectureChange(e.target.value)}
+          className={`w-full border rounded-xl px-4 py-3 text-base bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition ${errors.prefecture ? 'border-red-400' : 'border-gray-200'}`}
+        >
+          <option value="">選択してください</option>
+          {AREA_PREFECTURES.map(p => (
+            <option key={p.name} value={p.name}>{p.name}</option>
+          ))}
+        </select>
+        {errors.prefecture && <p className="text-red-500 text-xs mt-1">{errors.prefecture}</p>}
+      </div>
+
+      {/* 区市町村 */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          🏠 お住まいの区市町村
         </label>
         <select
           value={ward}
           onChange={e => { setWard(e.target.value); setErrors(prev => ({ ...prev, ward: '' })) }}
-          className={`w-full border rounded-xl px-4 py-3 text-base bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition ${errors.ward ? 'border-red-400' : 'border-gray-200'}`}
+          disabled={!prefecture}
+          className={`w-full border rounded-xl px-4 py-3 text-base bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed ${errors.ward ? 'border-red-400' : 'border-gray-200'}`}
         >
-          <option value="">選択してください</option>
-          {WARDS.map(w => <option key={w} value={w}>{w}</option>)}
+          <option value="">
+            {prefecture ? '選択してください' : '先に都道府県を選択してください'}
+          </option>
+          {cities.map(city => (
+            <option key={city} value={city}>{city}</option>
+          ))}
         </select>
         {errors.ward && <p className="text-red-500 text-xs mt-1">{errors.ward}</p>}
       </div>
