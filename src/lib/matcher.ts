@@ -118,9 +118,12 @@ function isEligible(
   birthOrder: number,
   income: number,
 ): boolean {
+  // 出産予定（ageMonths < 0）の場合は 0 として扱い、生後すぐに受けられる給付を表示
+  const effectiveAge = Math.max(ageMonths, 0)
+
   // 年齢チェック
-  if (cond?.child_age_min_months != null && ageMonths < (cond.child_age_min_months as number)) return false
-  if (cond?.child_age_max_months != null && ageMonths > (cond.child_age_max_months as number)) return false
+  if (cond?.child_age_min_months != null && effectiveAge < (cond.child_age_min_months as number)) return false
+  if (cond?.child_age_max_months != null && effectiveAge > (cond.child_age_max_months as number)) return false
 
   // 所得チェック
   if (cond?.income_max_man_yen != null && income > (cond.income_max_man_yen as number)) return false
