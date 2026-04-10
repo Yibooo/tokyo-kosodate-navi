@@ -4,12 +4,12 @@ import SummaryBanner from '@/components/SummaryBanner'
 import ResultList from '@/components/ResultList'
 
 interface Props {
-  searchParams: Promise<{ ward?: string; birthdate?: string; birth_order?: string; income?: string }>
+  searchParams: Promise<{ prefecture?: string; ward?: string; birthdate?: string; birth_order?: string; income?: string }>
 }
 
 export default async function ResultsPage({ searchParams }: Props) {
   const params = await searchParams
-  const { ward = '', birthdate = '', birth_order = '1', income = '500' } = params
+  const { prefecture = '', ward = '', birthdate = '', birth_order = '1', income = '500' } = params
 
   if (!ward || !birthdate) {
     return <ErrorView message="検索条件が不足しています" />
@@ -18,6 +18,7 @@ export default async function ResultsPage({ searchParams }: Props) {
   let result
   try {
     result = await matchPolicies({
+      prefecture,
       ward,
       birthdate,
       birthOrder: Number(birth_order),
@@ -31,10 +32,11 @@ export default async function ResultsPage({ searchParams }: Props) {
   const { matched, annual_total, lump_total, user_summary } = result
 
   const tabs = [
-    { key: 'all',      label: '全て',   items: matched },
-    { key: 'national', label: '国',     items: matched.filter(p => p.layer === 'national') },
-    { key: 'tokyo',    label: '東京都', items: matched.filter(p => p.layer === 'tokyo') },
-    { key: 'ward',     label: ward,     items: matched.filter(p => p.layer === 'ward') },
+    { key: 'all',      label: '全て',       items: matched },
+    { key: 'national', label: '国',         items: matched.filter(p => p.layer === 'national') },
+    { key: 'tokyo',    label: '東京都',     items: matched.filter(p => p.layer === 'tokyo') },
+    { key: 'pref',     label: prefecture,   items: matched.filter(p => p.layer === 'pref') },
+    { key: 'ward',     label: ward,         items: matched.filter(p => p.layer === 'ward') },
   ].filter(t => t.key === 'all' || t.items.length > 0)
 
   return (

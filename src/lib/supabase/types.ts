@@ -1,4 +1,4 @@
-export type PolicyLayer = 'national' | 'tokyo' | 'ward'
+export type PolicyLayer = 'national' | 'tokyo' | 'pref' | 'ward'
 export type PolicyStatus = 'draft' | 'approved' | 'rejected' | 'archived'
 
 export interface Policy {

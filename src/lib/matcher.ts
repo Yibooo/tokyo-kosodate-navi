@@ -2,7 +2,8 @@ import { createServerClient } from '@/lib/supabase/server'
 import { SEED_POLICIES } from '@/lib/seed-policies'
 
 export interface UserInput {
-  ward: string
+  prefecture: string    // 都道府県名（例: '東京都', '埼玉県'）
+  ward: string          // 市区町村名（例: '港区', '川崎市'）
   birthdate: string     // YYYY-MM-DD
   birthOrder: number    // 1〜4（4以上）
   incomeManYen: number  // 万円単位
@@ -11,7 +12,8 @@ export interface UserInput {
 export interface MatchedPolicy {
   policy_id: string
   name: string
-  layer: 'national' | 'tokyo' | 'ward'
+  layer: 'national' | 'tokyo' | 'pref' | 'ward'
+  prefecture: string | null
   ward: string | null
   category: string | null
   summary: string
@@ -144,37 +146,48 @@ export async function matchPolicies(input: UserInput): Promise<MatchResult> {
   // Supabase が設定されている場合は DB から取得、未設定またはエラー時は静的データにフォールバック
   let policies: Record<string, unknown>[]
 
+  const isTokyoPref = input.prefecture === '東京都'
+
+  // 静的シードデータのフィルタ関数（共通）
+  function filterSeedPolicies() {
+    return SEED_POLICIES.filter(p => {
+      if (p.layer === 'national') return true
+      if (p.layer === 'tokyo' && isTokyoPref) return true
+      if (p.layer === 'pref' && p.prefecture === input.prefecture) return true
+      if (p.layer === 'ward' && p.ward === input.ward) return true
+      return false
+    }) as unknown as Record<string, unknown>[]
+  }
+
   const hasSupabase = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
 
   if (hasSupabase) {
     try {
       const supabase = createServerClient()
+      // DB フィルタ: national + (東京ならtokyo) + pref(該当県) + ward(該当市区町村)
+      const layerFilter = isTokyoPref
+        ? `layer.in.(national,tokyo),layer.eq.pref.and.prefecture.eq.${input.prefecture},ward.eq.${input.ward}`
+        : `layer.eq.national,layer.eq.pref.and.prefecture.eq.${input.prefecture},ward.eq.${input.ward}`
       const { data, error } = await supabase
         .from('policies')
         .select('*, policy_conditions(*)')
         .eq('status', 'approved')
-        .or(`layer.in.(national,tokyo),ward.eq.${input.ward}`)
+        .or(layerFilter)
         .order('layer')
 
       if (error) {
         console.error('[matcher] Supabase error, falling back to seed data:', error)
-        policies = SEED_POLICIES.filter(
-          p => p.layer === 'national' || p.layer === 'tokyo' || p.ward === input.ward
-        ) as unknown as Record<string, unknown>[]
+        policies = filterSeedPolicies()
       } else {
         policies = (data ?? []) as unknown as Record<string, unknown>[]
       }
     } catch (err) {
       console.error('[matcher] Supabase client error, falling back to seed data:', err)
-      policies = SEED_POLICIES.filter(
-        p => p.layer === 'national' || p.layer === 'tokyo' || p.ward === input.ward
-      ) as unknown as Record<string, unknown>[]
+      policies = filterSeedPolicies()
     }
   } else {
     // Supabase 未設定: 静的シードデータを使用
-    policies = SEED_POLICIES.filter(
-      p => p.layer === 'national' || p.layer === 'tokyo' || p.ward === input.ward
-    ) as unknown as Record<string, unknown>[]
+    policies = filterSeedPolicies()
   }
 
   if (!policies || policies.length === 0) {
@@ -196,7 +209,8 @@ export async function matchPolicies(input: UserInput): Promise<MatchResult> {
     matched.push({
       policy_id:      p.id as string,
       name:           p.name as string,
-      layer:          p.layer as 'national' | 'tokyo' | 'ward',
+      layer:          p.layer as 'national' | 'tokyo' | 'pref' | 'ward',
+      prefecture:     p.prefecture as string | null,
       ward:           p.ward as string | null,
       category:       (p.category as string | null) ?? null,
       summary:        p.summary as string,
@@ -223,7 +237,7 @@ export async function matchPolicies(input: UserInput): Promise<MatchResult> {
   // 現金給付の合計のみ計算（サービス系は除く）
   const annual_total = matched.reduce((s, p) => s + (p.monthly_amount ?? 0) * 12, 0)
   const lump_total   = matched.reduce((s, p) => s + (p.lump_amount ?? 0), 0)
-  const user_summary = `${input.ward}・第${input.birthOrder}子・${ageLabel(ageMonths)}・世帯年収${input.incomeManYen}万円`
+  const user_summary = `${input.prefecture} ${input.ward}・第${input.birthOrder}子・${ageLabel(ageMonths)}・世帯年収${input.incomeManYen}万円`
 
   return { matched, annual_total, lump_total, user_summary }
 }

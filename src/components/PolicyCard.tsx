@@ -6,7 +6,8 @@ import type { MatchedPolicy } from '@/lib/matcher'
 const LAYER_CONFIG = {
   national: { label: '国', color: 'bg-blue-100 text-blue-700 border-blue-200' },
   tokyo:    { label: '東京都', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  ward:     { label: '区', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  pref:     { label: '都道府県', color: 'bg-violet-100 text-violet-700 border-violet-200' },
+  ward:     { label: '市区町村', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
 }
 
 const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
@@ -58,7 +59,11 @@ export default function PolicyCard({ policy, rank }: Props) {
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <span className="text-xs font-bold text-gray-300">#{rank}</span>
           <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${cfg.color}`}>
-            {cfg.label}{policy.ward ? `・${policy.ward}` : ''}
+            {policy.layer === 'pref'
+              ? (policy.prefecture ?? cfg.label)
+              : policy.layer === 'ward'
+                ? (policy.ward ?? cfg.label)
+                : cfg.label}
           </span>
           {catCfg && policy.category && (
             <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${catCfg.color}`}>
