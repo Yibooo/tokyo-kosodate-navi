@@ -1,9 +1,9 @@
-# 要件定義書 v0.4
+# 要件定義書 v0.5
 
 ## システム名：子育て支援ナビ（東京23区 + 近郊10市対応）
 
 > **最終更新：2026年4月**
-> Phase 0〜2 実装完了・**エリア拡張プロジェクト（Phase A1〜A3）進行中**
+> Phase 0〜2 実装完了・Phase A1〜A3 完了・**保育施設情報プロジェクト（Phase B1〜B5）進行中**
 
 ---
 
@@ -29,8 +29,16 @@ Phase 2：データ拡充（23区全対応・67制度登録・カテゴリ分類
 
 ── エリア拡張プロジェクト（2026年4月〜） ──────────────────────────────
 Phase A1：エリア拡張・データ基盤（近郊10市 + 4都県レベル対応）           ✅ 完了（2026/04）
-Phase A2：入力UI変更（都道府県 → 区市町村の2段セレクト）                 🚧 開発中
-Phase A3：比較モード（最大3エリアを並べて比較する比較表）                 📋 計画中
+Phase A2：入力UI変更（都道府県 → 区市町村の2段セレクト）                 ✅ 完了（2026/04）
+Phase A3：比較モード（最大3エリアを並べて比較する比較表）                 ✅ 完了（2026/04）
+──────────────────────────────────────────────────────────────────────
+
+── 保育施設情報プロジェクト（Phase B1〜B5）────────────────────────────
+Phase B1：データ収集・seed-childcare.ts 生成（東京23区 × 5年）           🚧 開発中
+Phase B2：DB スキーマ追加 + Home ページタブ切替 UI 実装                   📋 計画中
+Phase B3：保育園タブ ― 施設数・定員テーブル＋待機児童テーブル実装          📋 計画中
+Phase B4：保育園タブ ― 5年トレンドテーブル＋難易度スコア＋コメント実装     📋 計画中
+Phase B5：認可外保育施設・幼稚園データ拡充（施設種別を全5種へ拡大）        📋 計画中
 ──────────────────────────────────────────────────────────────────────
 
 Phase 3：UX改善（シミュレーター・共有・Cron自動更新）                     📋 計画中
@@ -226,7 +234,7 @@ ALTER TYPE policy_layer ADD VALUE 'pref';
 
 ---
 
-### Phase A2：入力UI変更（都道府県→区市町村の2段セレクト） 🚧 開発中
+### Phase A2：入力UI変更（都道府県→区市町村の2段セレクト） ✅ 完了（2026/04）
 
 **[A2-1] SearchForm.tsx の変更**
 
@@ -252,7 +260,7 @@ ALTER TYPE policy_layer ADD VALUE 'pref';
 
 ---
 
-### Phase A3：比較モード（最大3エリア並列比較） 📋 計画中
+### Phase A3：比較モード（最大3エリア並列比較） ✅ 完了（2026/04）
 
 **[A3-1] 概要**
 同時に最大3つのエリアを選択して、子育て支援制度を横並びで比較できるモード。
@@ -309,6 +317,239 @@ function buildCompareRows(
 - 共通条件（生年月日・第何子・世帯年収）は1つのみ入力（全エリアに共通適用）
 - スマホ表示：横スクロール対応（固定ヘッダー列 + 横スクロール）
 - 「通常検索に戻る」リンクをトップに配置
+
+---
+
+---
+
+## ── 保育施設情報プロジェクト詳細（Phase B1〜B5）──
+
+### 共通仕様
+
+| 項目 | 内容 |
+|------|------|
+| 対象エリア | 東京23区（B1〜B4）→ 近郊10市へ順次拡大（将来）|
+| データ更新方針 | 年1回・手動（公的機関 CSV 取得 → seed ファイル更新） |
+| データ年数 | 直近5年（2020〜2024年度） |
+| ローンチ形態 | Home ページにベータ版タブとして追加（補助金 / 保育園情報 β） |
+| グラフ表示 | テーブル形式＋矢印（↑↓）— ライブラリ不使用・軽量 |
+| AIコメント | ロジックベーステンプレート（LLM 不使用） |
+
+---
+
+### Phase B1：データ収集・seed-childcare.ts 生成 🚧 開発中
+
+**[B1-1] データソース**
+
+| データ種別 | 一次ソース | 公開形式 |
+|-----------|-----------|---------|
+| 認可保育所・認定こども園・小規模施設（施設数・定員・待機児童） | 厚生労働省「保育所等関連状況取りまとめ」（毎年9月公表・4月1日時点） | Excel / CSV |
+| 出生数トレンド | 東京都「人口動態統計」区市町村別データ | Excel |
+
+**[B1-2] シードデータ構成**（`src/lib/seed-childcare.ts`）
+
+```typescript
+// ① 施設数・定員（23区 × 5年 × 3施設種別 = 345件）
+export interface SeedFacility {
+  ward:        string   // '千代田区' 〜 '足立区' etc.
+  fiscal_year: number   // 2020〜2024
+  category:    '認可保育所' | '認定こども園' | '小規模等'
+  count:       number
+  capacity:    number
+}
+
+// ② 年齢別待機児童数（23区 × 5年 × 6歳 = 690件）
+export interface SeedWaiting {
+  ward:                 string
+  fiscal_year:          number
+  age_years:            0 | 1 | 2 | 3 | 4 | 5  // 5 = 5歳以上
+  waiting_count:        number
+  hidden_waiting_count: number | null            // 利用保留人数
+}
+
+// ③ 出生数トレンド（23区 × 5年 = 115件）
+export interface SeedBirth {
+  ward:        string
+  fiscal_year: number
+  birth_count: number
+}
+
+export const SEED_FACILITIES: SeedFacility[] = [ ... ]
+export const SEED_WAITING:    SeedWaiting[]  = [ ... ]
+export const SEED_BIRTHS:     SeedBirth[]    = [ ... ]
+```
+
+**[B1-3] Phase B1 完了条件**
+- 23区 × 2020〜2024年の全データを seed ファイルに格納
+- TypeScript コンパイル通過
+
+---
+
+### Phase B2：DB スキーマ追加 + Home タブ切替 UI 📋 計画中
+
+**[B2-1] Supabase テーブル追加**
+
+```sql
+-- ① 施設数・定員
+CREATE TABLE childcare_facilities (
+  ward         VARCHAR(20) NOT NULL,
+  fiscal_year  SMALLINT    NOT NULL,
+  category     VARCHAR(50) NOT NULL,  -- '認可保育所' | '認定こども園' | '小規模等'
+  count        SMALLINT    NOT NULL,
+  capacity     INT         NOT NULL,
+  PRIMARY KEY (ward, fiscal_year, category)
+);
+
+-- ② 年齢別待機児童数
+CREATE TABLE waiting_children (
+  ward                 VARCHAR(20) NOT NULL,
+  fiscal_year          SMALLINT    NOT NULL,
+  age_years            SMALLINT    NOT NULL,  -- 0〜5
+  waiting_count        SMALLINT    NOT NULL,
+  hidden_waiting_count SMALLINT,
+  PRIMARY KEY (ward, fiscal_year, age_years)
+);
+
+-- ③ 出生数トレンド
+CREATE TABLE birth_trends (
+  ward         VARCHAR(20) NOT NULL,
+  fiscal_year  SMALLINT    NOT NULL,
+  birth_count  INT         NOT NULL,
+  PRIMARY KEY (ward, fiscal_year)
+);
+```
+
+**[B2-2] Home ページ タブ UI**
+
+```
+┌─────────────────────────────────────────────────────┐
+│  💴 補助金・支援制度  │  🏫 保育園情報  β              │
+├─────────────────────────────────────────────────────┤
+│  （タブに応じて SearchForm ← または → 保育園タブコンテンツ）│
+└─────────────────────────────────────────────────────┘
+```
+
+- `src/components/HomeTab.tsx`（クライアントコンポーネント）
+- タブ状態は URL ハッシュ（`#nursery`）で保持 → リロード耐性あり
+- 保育園タブは `β` バッジ付きで表示
+
+**[B2-3] 新設ファイル**
+
+| ファイル | 役割 |
+|---------|------|
+| `src/components/HomeTab.tsx` | Home ページのタブ切替（クライアント） |
+| `src/lib/childcare.ts` | 施設データ取得ロジック（Supabase + seed fallback） |
+| `supabase/migrations/005_childcare.sql` | テーブル作成 + seed データ投入 |
+
+---
+
+### Phase B3：施設数テーブル＋待機児童テーブル 📋 計画中
+
+**[B3-1] 保育園タブ内 UI 構成**
+
+```
+┌─────────────────────────────────────────────────────┐
+│  お住まいの区: [港区 ▼]   年度: [2024年度 ▼]           │
+├─────────────────────────────────────────────────────┤
+│  📊 施設数・収容定員（最新2024年度）                    │
+│                                                      │
+│  種別            施設数    定員                        │
+│  認可保育所          ○○    ○,○○○名                    │
+│  認定こども園         ○○    ○,○○○名                    │
+│  小規模・家庭的等      ○○    ○,○○○名                    │
+│  合計               ○○○   ○○,○○○名                   │
+├─────────────────────────────────────────────────────┤
+│  📋 年齢別待機児童数（2024年4月1日時点）                  │
+│                                                      │
+│  年齢   待機児童   利用保留（隠れ待機）                   │
+│  0歳        ○○          ○○○名                        │
+│  1歳        ○○          ○○○名                        │
+│  2歳        ○○          ○○○名                        │
+│  3歳         ○            ○○名                        │
+│  4・5歳以上    ○             ○名                        │
+│  合計        ○○○          ○○○名                       │
+└─────────────────────────────────────────────────────┘
+```
+
+**[B3-2] 新設コンポーネント**
+
+| ファイル | 役割 |
+|---------|------|
+| `src/components/nursery/FacilityTable.tsx` | 施設数・定員テーブル |
+| `src/components/nursery/WaitingTable.tsx` | 年齢別待機児童テーブル |
+| `src/components/nursery/NurseryPanel.tsx` | 両テーブルをまとめるパネル（区・年度セレクト含む） |
+
+---
+
+### Phase B4：5年トレンドテーブル＋難易度スコア 📋 計画中
+
+**[B4-1] トレンドテーブル UI**
+
+```
+📈 5年間トレンド（2020〜2024年度）
+
+年度    出生数   認可定員   待機児童  前年比    難易度
+2020   ○,○○○  ○○,○○○     ○○○      —      🔴 高
+2021   ○,○○○  ○○,○○○     ○○○    ↑ +○○   🔴 高
+2022   ○,○○○  ○○,○○○      ○○    ↓ -○○   🟡 中
+2023   ○,○○○  ○○,○○○       ○    ↓ -○○   🟢 低
+2024   ○,○○○  ○○,○○○       ○      ±0    🟢 低
+
+📝 ○○区は2021年をピークに待機児童が急減。認可定員の拡充が
+   進んでおり、入園難易度は改善傾向にあります。
+```
+
+**[B4-2] 難易度スコア算出ロジック**
+
+```typescript
+// 需給ギャップ率 = 待機児童数合計 / 認可定員合計 × 100
+type DifficultyLevel = 'high' | 'mid' | 'low'
+
+function calcDifficulty(waitingTotal: number, capacityTotal: number): DifficultyLevel {
+  const rate = (waitingTotal / capacityTotal) * 100
+  if (rate >= 3) return 'high'   // 🔴
+  if (rate >= 1) return 'mid'    // 🟡
+  return 'low'                   // 🟢
+}
+```
+
+**[B4-3] 自動コメントテンプレート（ロジックベース）**
+
+| 条件 | コメントパターン |
+|------|----------------|
+| 待機児童 減少 ＋ 定員 増加 | 「認可定員の拡充が進んでおり、入園難易度は改善傾向にあります」 |
+| 待機児童 増加 ＋ 出生数 増加 | 「転入等による出生数増加に施設整備が追いついておらず、競争率が高まっています」 |
+| 待機児童 ≒ 0 継続 | 「直近○年間、待機児童ゼロを維持しています。比較的入園しやすいエリアです」 |
+| 待機児童 増加 ＋ 出生数 横ばい | 「定員不足が顕在化しています。早めの申し込み・複数園の検討を推奨します」 |
+
+**[B4-4] /results ページへの統合**
+
+- 検索結果ページ（`/results`）の下部に「🏫 この区の保育園情報も見る」折りたたみセクションを追加
+- 最新年度（2024年度）の施設数サマリ + 待機児童合計を1行で表示
+- 「詳細を見る →」で Home の保育園タブへ誘導
+
+---
+
+### Phase B5：認可外保育施設・幼稚園データ拡充 📋 計画中
+
+**[B5-1] 追加データソース**
+
+| データ種別 | 一次ソース |
+|-----------|-----------|
+| 認可外保育施設数・定員 | 厚生労働省「認可外保育施設の現況取りまとめ」 |
+| 幼稚園数・定員 | 文部科学省「学校基本調査」 |
+
+**[B5-2] 施設種別を全5種へ拡大**
+
+| 種別 | B1〜B4 | B5 |
+|------|--------|----|
+| 認可保育所 | ✅ | ✅ |
+| 認定こども園 | ✅ | ✅ |
+| 小規模・家庭的等 | ✅ | ✅ |
+| 認可外保育施設 | ― | ✅ 追加 |
+| 幼稚園（公私計） | ― | ✅ 追加 |
+
+**[B5-3] DB カラム・seed 変更なし**（category の値を追加するのみ）
 
 ---
 
@@ -462,7 +703,7 @@ src/
 ├── app/
 │   ├── page.tsx                   # 入力フォームページ
 │   ├── results/page.tsx           # 結果表示ページ（prefecture パラメータ対応）
-│   ├── compare/page.tsx           # 比較モードページ（Phase A3・未実装）
+│   ├── compare/page.tsx           # 比較モードページ（Phase A3・実装済み）
 │   ├── admin/review/page.tsx      # 管理者レビュー画面
 │   └── api/
 │       ├── scrape/route.ts        # スクレイピング実行API
@@ -473,12 +714,19 @@ src/
 │   ├── SearchForm.tsx             # 検索フォーム（Phase A2 で2段セレクト化予定）
 │   ├── ResultList.tsx             # 結果一覧（層・カテゴリフィルター）
 │   ├── PolicyCard.tsx             # 制度カード（pref バッジ対応済み）
-│   ├── CompareForm.tsx            # 比較エリア選択フォーム（Phase A3・未実装）
-│   └── CompareTable.tsx           # 比較表（Phase A3・未実装）
+│   ├── CompareForm.tsx            # 比較エリア選択フォーム（Phase A3・実装済み）
+│   ├── CompareTable.tsx           # 比較表（Phase A3・実装済み）
+│   └── nursery/
+│       ├── NurseryPanel.tsx       # 保育園タブ全体パネル（Phase B3・計画中）
+│       ├── FacilityTable.tsx      # 施設数・定員テーブル（Phase B3・計画中）
+│       └── WaitingTable.tsx       # 待機児童テーブル（Phase B3・計画中）
 └── lib/
     ├── matcher.ts                 # ルールベースマッチングエンジン（prefecture 対応済み）
     ├── areas.ts                   # 都道府県→市区町村マスタ（Phase A1 追加）
+    ├── compare.ts                 # 比較表マージロジック（Phase A3・実装済み）
     ├── seed-policies.ts           # 静的シードデータ（107件・Supabase フォールバック用）
+    ├── seed-childcare.ts          # 保育施設静的データ（Phase B1・計画中）
+    ├── childcare.ts               # 保育施設データ取得ロジック（Phase B2・計画中）
     ├── supabase/
     │   ├── client.ts              # Supabaseクライアント（ブラウザ用）
     │   ├── server.ts              # Supabaseクライアント（サーバー用）
@@ -492,7 +740,8 @@ supabase/migrations/
 ├── 001_initial_schema.sql         # 初期スキーマ
 ├── 002_seed_policies.sql          # 初期シードデータ（14件）
 ├── 003_expand_policies.sql        # 拡充データ（+25件、カテゴリ追加）
-└── 004_seed_18wards.sql           # 18区追加データ（+28件）
+├── 004_seed_18wards.sql           # 18区追加データ（+28件）
+└── 005_childcare.sql              # 保育施設テーブル作成 + seed 投入（Phase B2・計画中）
 ```
 
 ---
