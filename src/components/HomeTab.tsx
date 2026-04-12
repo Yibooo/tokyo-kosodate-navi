@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react'
 import SearchForm from '@/components/SearchForm'
 import Link from 'next/link'
+import { NurseryCompareView, NurseryRankingView } from '@/components/NurseryViews'
 import {
   SUPPORTED_WARDS,
   DIFFICULTY_CONFIG,
   type NurseryData,
   type TrendRow,
 } from '@/lib/childcare'
+
+type NurseryView = 'single' | 'compare' | 'ranking'
 
 // =============================================
 // メインコンポーネント：ホームタブ切替
@@ -117,6 +120,57 @@ function SubsidyPanel() {
 // =============================================
 
 function NurseryPanel() {
+  const [view, setView] = useState<NurseryView>('single')
+
+  const VIEW_BTNS: { key: NurseryView; icon: string; label: string }[] = [
+    { key: 'single',  icon: '🏠', label: '単区詳細' },
+    { key: 'compare', icon: '⚖️', label: 'エリア比較' },
+    { key: 'ranking', icon: '🏆', label: '全区ランキング' },
+  ]
+
+  return (
+    <div className="space-y-4">
+      {/* 免責事項 */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 flex gap-2">
+        <span className="shrink-0">⚠️</span>
+        <span>
+          2024年度データ（こども家庭庁・東京都統計局）をもとに表示。
+          2020〜2023年の定員は推計値を含みます。最新情報は各区の保育課にご確認ください。
+        </span>
+      </div>
+
+      {/* ビュートグル */}
+      <div className="flex rounded-xl bg-gray-100 p-1 gap-1">
+        {VIEW_BTNS.map(btn => (
+          <button
+            key={btn.key}
+            onClick={() => setView(btn.key)}
+            className={`flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-lg text-xs font-semibold transition-all
+              ${view === btn.key
+                ? 'bg-white shadow text-gray-900'
+                : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            <span>{btn.icon}</span>
+            <span className="hidden sm:inline">{btn.label}</span>
+            <span className="sm:hidden">{btn.label.slice(0, 4)}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ビュー切替 */}
+      {view === 'single'  && <SingleWardView />}
+      {view === 'compare' && <NurseryCompareView />}
+      {view === 'ranking' && <NurseryRankingView />}
+    </div>
+  )
+}
+
+// =============================================
+// 単区詳細ビュー（旧 NurseryPanel のコンテンツ）
+// =============================================
+
+function SingleWardView() {
   const [ward, setWard]       = useState(SUPPORTED_WARDS[0])
   const [data, setData]       = useState<NurseryData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -127,7 +181,6 @@ function NurseryPanel() {
     setLoading(true)
     setError(null)
 
-    // クライアントから動的インポートで取得（サーバーアクション相当）
     import('@/lib/childcare').then(({ getNurseryData }) =>
       getNurseryData(ward)
     ).then(result => {
@@ -145,15 +198,6 @@ function NurseryPanel() {
 
   return (
     <div className="space-y-4">
-      {/* 免責事項 */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 flex gap-2">
-        <span className="shrink-0">⚠️</span>
-        <span>
-          2024年度データ（こども家庭庁・東京都統計局）をもとに表示。
-          2020〜2023年の定員は推計値を含みます。最新情報は各区の保育課にご確認ください。
-        </span>
-      </div>
-
       {/* 区セレクト */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
         <label className="block text-xs font-semibold text-gray-600 mb-2">
@@ -183,13 +227,8 @@ function NurseryPanel() {
 
       {data && !loading && (
         <>
-          {/* セクション① 施設数・定員 */}
           <FacilitySection data={data} />
-
-          {/* セクション② 待機児童 */}
           <WaitingSection data={data} />
-
-          {/* セクション③ 5年トレンド */}
           <TrendSection data={data} />
         </>
       )}

@@ -233,3 +233,58 @@ export const DIFFICULTY_CONFIG = {
   mid:  { label: '中', color: 'text-yellow-600', bg: 'bg-yellow-50', dot: '🟡' },
   low:  { label: '低', color: 'text-green-600',  bg: 'bg-green-50',  dot: '🟢' },
 } as const
+
+// =============================================
+// 比較・ランキング用 API
+// =============================================
+
+/** 比較表の1区分データ */
+export interface WardCompareItem {
+  ward:                string
+  total_capacity:      number   // 最新年度 認可定員合計
+  total_count:         number   // 最新年度 施設数合計
+  total_waiting:       number   // 最新年度 待機児童数
+  difficulty:          'high' | 'mid' | 'low'
+  birth_latest:        number   // 最新年度 出生数
+  waiting_change_5y:   number   // 5年間待機変化（最新 - 最古）
+  trend_comment:       string
+}
+
+/**
+ * 全23区の比較用サマリーデータを一括取得。
+ * ランキング・比較表に使用。
+ */
+export async function getAllWardsCompare(): Promise<WardCompareItem[]> {
+  const results = await Promise.all(
+    SUPPORTED_WARDS.map(ward => getNurseryData(ward))
+  )
+
+  return results
+    .filter((d): d is NurseryData => d !== null)
+    .map(d => {
+      const firstTrend = d.trend[0]
+      const lastTrend  = d.trend[d.trend.length - 1]
+      return {
+        ward:              d.ward,
+        total_capacity:    d.facility.total_capacity,
+        total_count:       d.facility.total_count,
+        total_waiting:     d.waiting.total_waiting,
+        difficulty:        calcDifficulty(d.waiting.total_waiting, d.facility.total_capacity),
+        birth_latest:      lastTrend?.birth_count        ?? 0,
+        waiting_change_5y: (lastTrend?.total_waiting ?? 0) - (firstTrend?.total_waiting ?? 0),
+        trend_comment:     d.trend_comment,
+      }
+    })
+}
+
+/**
+ * 待機児童数でランキングソートしたリストを返す（多い順）
+ */
+export function sortByDifficulty(items: WardCompareItem[]): WardCompareItem[] {
+  const order = { high: 0, mid: 1, low: 2 }
+  return [...items].sort((a, b) => {
+    const dDiff = order[a.difficulty] - order[b.difficulty]
+    if (dDiff !== 0) return dDiff
+    return b.total_waiting - a.total_waiting
+  })
+}
