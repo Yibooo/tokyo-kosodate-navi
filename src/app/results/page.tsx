@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { matchPolicies } from '@/lib/matcher'
 import SummaryBanner from '@/components/SummaryBanner'
 import ResultList from '@/components/ResultList'
+import NurserySnippet from '@/components/NurserySnippet'
 
 interface Props {
   searchParams: Promise<{ prefecture?: string; ward?: string; birthdate?: string; birth_order?: string; income?: string }>
@@ -80,6 +81,9 @@ export default async function ResultsPage({ searchParams }: Props) {
         ) : (
           <ResultList tabs={tabs} />
         )}
+
+        {/* 保育園情報スニペット（東京23区のみ表示） */}
+        <NurserySnippet ward={ward} />
       </main>
 
       <footer className="text-center text-xs text-gray-400 py-8 border-t border-gray-100 mt-8">
