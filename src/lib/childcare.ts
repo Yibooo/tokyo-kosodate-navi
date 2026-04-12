@@ -29,8 +29,9 @@ export interface FacilitySummary {
   ward:        string
   fiscal_year: number
   rows:        FacilityRow[]
-  total_count:    number
-  total_capacity: number
+  total_count:         number
+  total_capacity:      number
+  recognized_capacity: number  // 認可系（保育所・こども園・小規模）の定員合計（待機比率の分母）
 }
 
 export interface WaitingSummary {
@@ -118,11 +119,30 @@ function buildTrendComment(trend: TrendRow[]): string {
 // seed データから NurseryData を組み立てる
 // =============================================
 
+// 施設種別ごとに「最新年度」が異なるため個別に取得する
+const LATEST_YEAR_BY_CATEGORY: Record<string, number> = {
+  '認可保育所':   2024,
+  '認定こども園': 2024,
+  '小規模保育等': 2024,
+  '認可外保育施設': 2023,  // 厚労省データ最新
+  '幼稚園':       2024,  // 文科省データ最新
+}
+
+// 施設テーブルの表示順（種別ラベルの並び順）
+const CATEGORY_ORDER: FacilityCategory[] = [
+  '認可保育所', '認定こども園', '小規模保育等', '認可外保育施設', '幼稚園',
+]
+
 function buildFromSeed(ward: string): NurseryData | null {
-  // --- 施設データ（最新年度）---
-  const facRows = SEED_FACILITIES.filter(
-    (f: SeedFacility) => f.ward === ward && f.fiscal_year === LATEST_YEAR
-  )
+  // --- 施設データ（種別ごとに最新年度を取得）---
+  const facRows: SeedFacility[] = []
+  for (const cat of CATEGORY_ORDER) {
+    const year = LATEST_YEAR_BY_CATEGORY[cat] ?? LATEST_YEAR
+    const row  = SEED_FACILITIES.find(
+      (f: SeedFacility) => f.ward === ward && f.fiscal_year === year && f.category === cat
+    )
+    if (row) facRows.push(row)
+  }
   if (facRows.length === 0) return null
 
   const facilityRows: FacilityRow[] = facRows.map((f: SeedFacility) => ({
@@ -131,6 +151,11 @@ function buildFromSeed(ward: string): NurseryData | null {
     capacity:  f.capacity,
     estimated: f.estimated,
   }))
+  // 認可系（認可保育所・こども園・小規模）の定員合計（待機児童比率の分母として使用）
+  const recognizedCapacity = facilityRows
+    .filter(r => r.category !== '認可外保育施設' && r.category !== '幼稚園')
+    .reduce((s, r) => s + r.capacity, 0)
+
   const totalCount    = facilityRows.reduce((s, r) => s + r.count, 0)
   const totalCapacity = facilityRows.reduce((s, r) => s + r.capacity, 0)
 
@@ -140,6 +165,7 @@ function buildFromSeed(ward: string): NurseryData | null {
     rows:            facilityRows,
     total_count:     totalCount,
     total_capacity:  totalCapacity,
+    recognized_capacity: recognizedCapacity,
   }
 
   // --- 待機児童データ（最新年度）---
@@ -164,13 +190,16 @@ function buildFromSeed(ward: string): NurseryData | null {
     const waitTrend  = SEED_WAITING.find(
       (w: SeedWaiting) => w.ward === ward && w.fiscal_year === year
     )
-    const facTrend   = SEED_FACILITIES.filter(
-      (f: SeedFacility) => f.ward === ward && f.fiscal_year === year
+    // トレンドでは認可系（保育所・こども園・小規模）の定員のみを使用
+    // 認可外・幼稚園はデータ年度が異なるため除外
+    const RECOGNIZED_CATS = new Set(['認可保育所', '認定こども園', '小規模保育等'])
+    const facTrend = SEED_FACILITIES.filter(
+      (f: SeedFacility) => f.ward === ward && f.fiscal_year === year && RECOGNIZED_CATS.has(f.category)
     )
 
-    const totalCap   = facTrend.reduce((s, f) => s + f.capacity, 0)
-    const totalWait  = waitTrend?.total_waiting ?? 0
-    const births     = birthRec?.birth_count ?? 0
+    const totalCap    = facTrend.reduce((s, f) => s + f.capacity, 0)
+    const totalWait   = waitTrend?.total_waiting ?? 0
+    const births      = birthRec?.birth_count ?? 0
     const isEstimated = facTrend.some(f => f.estimated)
 
     const yoy = prevWaiting !== null ? totalWait - prevWaiting : null

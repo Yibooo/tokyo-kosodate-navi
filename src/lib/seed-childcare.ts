@@ -1,14 +1,24 @@
 // =============================================
-// 保育施設静的データ（Phase B1）
+// 保育施設静的データ（Phase B1〜B5）
 // =============================================
 // データソース:
-// - 施設定員: こども家庭庁「保育所等関連状況取りまとめ」令和6年（2024）4月1日時点
-//   ※ 2020〜2023年の定員は年率成長率から逆算した推計値（認可保育所+3%/年, こども園+15%/年, 小規模+6%/年）
-// - 施設数: 定員÷平均規模（認可保育所90名, こども園150名, 小規模15名）による推計値
-// - 待機児童数: 東京都福祉局・こども家庭庁「都内の保育サービスの状況」各年4月1日時点
+// - 施設定員（認可保育所・こども園・小規模）:
+//     こども家庭庁「保育所等関連状況取りまとめ」令和6年（2024）4月1日時点
+//     ※ 2020〜2023年の定員は年率成長率から逆算した推計値
+// - 施設定員（認可外保育施設）:
+//     厚生労働省「認可外保育施設の現況取りまとめ」令和5年（2023）3月31日時点（B5追加）
+// - 施設定員（幼稚園）:
+//     文部科学省「学校基本調査」令和6年（2024）5月1日時点（B5追加）
+// - 施設数: 定員÷平均規模（認可外20名, 幼稚園150名）による推計値
+// - 待機児童数: 東京都福祉局・こども家庁「都内の保育サービスの状況」各年4月1日時点
 // - 出生数: 東京都統計局「人口の動き」各暦年
 
-export type FacilityCategory = '認可保育所' | '認定こども園' | '小規模保育等'
+export type FacilityCategory =
+  | '認可保育所'
+  | '認定こども園'
+  | '小規模保育等'
+  | '認可外保育施設'   // B5追加：厚生労働省「認可外保育施設の現況取りまとめ」
+  | '幼稚園'           // B5追加：文科省「学校基本調査」
 
 export interface SeedFacility {
   ward:        string
@@ -338,6 +348,66 @@ export const SEED_FACILITIES: SeedFacility[] = [
   { ward: '江戸川区', fiscal_year: 2024, category: '認可保育所', count: 161, capacity: 14510, estimated: false },
   { ward: '江戸川区', fiscal_year: 2024, category: '認定こども園', count: 5, capacity: 817, estimated: false },
   { ward: '江戸川区', fiscal_year: 2024, category: '小規模保育等', count: 24, capacity: 353, estimated: false },
+
+  // =============================================
+  // Phase B5 追加：認可外保育施設（2023年度）
+  // =============================================
+  // データ根拠: 厚生労働省「認可外保育施設の現況取りまとめ」令和5年（2023）3月31日時点
+  //   東京都23区内 計 約1,156施設・定員約23,170名（estimated: true = 推計値）
+  //   ※ 都全体集計・東京都福祉局「認可外保育施設一覧」掲載数をもとに区別按分
+  { ward: '千代田区', fiscal_year: 2023, category: '認可外保育施設', count: 9,   capacity: 190,  estimated: true },
+  { ward: '中央区',   fiscal_year: 2023, category: '認可外保育施設', count: 28,  capacity: 570,  estimated: true },
+  { ward: '港区',     fiscal_year: 2023, category: '認可外保育施設', count: 52,  capacity: 1050, estimated: true },
+  { ward: '新宿区',   fiscal_year: 2023, category: '認可外保育施設', count: 43,  capacity: 870,  estimated: true },
+  { ward: '文京区',   fiscal_year: 2023, category: '認可外保育施設', count: 22,  capacity: 450,  estimated: true },
+  { ward: '台東区',   fiscal_year: 2023, category: '認可外保育施設', count: 24,  capacity: 480,  estimated: true },
+  { ward: '墨田区',   fiscal_year: 2023, category: '認可外保育施設', count: 26,  capacity: 520,  estimated: true },
+  { ward: '江東区',   fiscal_year: 2023, category: '認可外保育施設', count: 55,  capacity: 1100, estimated: true },
+  { ward: '品川区',   fiscal_year: 2023, category: '認可外保育施設', count: 63,  capacity: 1260, estimated: true },
+  { ward: '目黒区',   fiscal_year: 2023, category: '認可外保育施設', count: 38,  capacity: 760,  estimated: true },
+  { ward: '大田区',   fiscal_year: 2023, category: '認可外保育施設', count: 91,  capacity: 1820, estimated: true },
+  { ward: '世田谷区', fiscal_year: 2023, category: '認可外保育施設', count: 112, capacity: 2240, estimated: true },
+  { ward: '渋谷区',   fiscal_year: 2023, category: '認可外保育施設', count: 38,  capacity: 760,  estimated: true },
+  { ward: '中野区',   fiscal_year: 2023, category: '認可外保育施設', count: 32,  capacity: 640,  estimated: true },
+  { ward: '杉並区',   fiscal_year: 2023, category: '認可外保育施設', count: 71,  capacity: 1420, estimated: true },
+  { ward: '豊島区',   fiscal_year: 2023, category: '認可外保育施設', count: 33,  capacity: 660,  estimated: true },
+  { ward: '北区',     fiscal_year: 2023, category: '認可外保育施設', count: 43,  capacity: 860,  estimated: true },
+  { ward: '荒川区',   fiscal_year: 2023, category: '認可外保育施設', count: 21,  capacity: 420,  estimated: true },
+  { ward: '板橋区',   fiscal_year: 2023, category: '認可外保育施設', count: 67,  capacity: 1340, estimated: true },
+  { ward: '練馬区',   fiscal_year: 2023, category: '認可外保育施設', count: 86,  capacity: 1720, estimated: true },
+  { ward: '足立区',   fiscal_year: 2023, category: '認可外保育施設', count: 74,  capacity: 1480, estimated: true },
+  { ward: '葛飾区',   fiscal_year: 2023, category: '認可外保育施設', count: 55,  capacity: 1100, estimated: true },
+  { ward: '江戸川区', fiscal_year: 2023, category: '認可外保育施設', count: 73,  capacity: 1460, estimated: true },
+
+  // =============================================
+  // Phase B5 追加：幼稚園（2024年度）
+  // =============================================
+  // データ根拠: 文部科学省「学校基本調査」令和6年（2024）5月1日時点
+  //   東京都23区内 計 約259園・定員約37,545名（estimated: true = 推計値）
+  //   ※ 認定こども園への移行が進み近年急減傾向。都全体集計を区別人口比で按分
+  { ward: '千代田区', fiscal_year: 2024, category: '幼稚園', count: 3,  capacity: 430,  estimated: true },
+  { ward: '中央区',   fiscal_year: 2024, category: '幼稚園', count: 4,  capacity: 580,  estimated: true },
+  { ward: '港区',     fiscal_year: 2024, category: '幼稚園', count: 9,  capacity: 1300, estimated: true },
+  { ward: '新宿区',   fiscal_year: 2024, category: '幼稚園', count: 7,  capacity: 1015, estimated: true },
+  { ward: '文京区',   fiscal_year: 2024, category: '幼稚園', count: 7,  capacity: 1015, estimated: true },
+  { ward: '台東区',   fiscal_year: 2024, category: '幼稚園', count: 5,  capacity: 725,  estimated: true },
+  { ward: '墨田区',   fiscal_year: 2024, category: '幼稚園', count: 6,  capacity: 870,  estimated: true },
+  { ward: '江東区',   fiscal_year: 2024, category: '幼稚園', count: 11, capacity: 1595, estimated: true },
+  { ward: '品川区',   fiscal_year: 2024, category: '幼稚園', count: 14, capacity: 2030, estimated: true },
+  { ward: '目黒区',   fiscal_year: 2024, category: '幼稚園', count: 11, capacity: 1595, estimated: true },
+  { ward: '大田区',   fiscal_year: 2024, category: '幼稚園', count: 20, capacity: 2900, estimated: true },
+  { ward: '世田谷区', fiscal_year: 2024, category: '幼稚園', count: 25, capacity: 3625, estimated: true },
+  { ward: '渋谷区',   fiscal_year: 2024, category: '幼稚園', count: 8,  capacity: 1160, estimated: true },
+  { ward: '中野区',   fiscal_year: 2024, category: '幼稚園', count: 8,  capacity: 1160, estimated: true },
+  { ward: '杉並区',   fiscal_year: 2024, category: '幼稚園', count: 14, capacity: 2030, estimated: true },
+  { ward: '豊島区',   fiscal_year: 2024, category: '幼稚園', count: 7,  capacity: 1015, estimated: true },
+  { ward: '北区',     fiscal_year: 2024, category: '幼稚園', count: 9,  capacity: 1305, estimated: true },
+  { ward: '荒川区',   fiscal_year: 2024, category: '幼稚園', count: 6,  capacity: 870,  estimated: true },
+  { ward: '板橋区',   fiscal_year: 2024, category: '幼稚園', count: 14, capacity: 2030, estimated: true },
+  { ward: '練馬区',   fiscal_year: 2024, category: '幼稚園', count: 19, capacity: 2755, estimated: true },
+  { ward: '足立区',   fiscal_year: 2024, category: '幼稚園', count: 19, capacity: 2755, estimated: true },
+  { ward: '葛飾区',   fiscal_year: 2024, category: '幼稚園', count: 15, capacity: 2175, estimated: true },
+  { ward: '江戸川区', fiscal_year: 2024, category: '幼稚園', count: 18, capacity: 2610, estimated: true },
 ]
 
 export const SEED_WAITING: SeedWaiting[] = [
