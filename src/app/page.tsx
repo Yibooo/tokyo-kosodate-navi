@@ -1,5 +1,4 @@
-import Link from 'next/link'
-import SearchForm from '@/components/SearchForm'
+import HomeTab from '@/components/HomeTab'
 import { AREA_PREFECTURES } from '@/lib/areas'
 
 export default function HomePage() {
@@ -30,24 +29,11 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* 検索フォームカード */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 max-w-2xl mx-auto">
-          <SearchForm />
-        </div>
-
-        {/* 比較モードへのリンク */}
-        <div className="mt-4 text-center">
-          <Link
-            href="/compare"
-            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md hover:shadow-lg"
-          >
-            <span>⚖️</span> 複数エリアを比較する →
-          </Link>
-          <p className="text-xs text-gray-400 mt-2">2〜3つのエリアの支援制度を並べて比較できます</p>
-        </div>
+        {/* メインコンテンツ：タブ切替（補助金 / 保育園情報β） */}
+        <HomeTab />
 
         {/* 対応エリアバッジ（都道府県別グループ表示） */}
-        <div className="mt-8 text-center">
+        <div className="mt-10 text-center">
           <p className="text-xs text-gray-400 mb-4">現在対応しているエリア</p>
           <div className="space-y-3 max-w-2xl mx-auto">
             {AREA_PREFECTURES.map(pref => (
