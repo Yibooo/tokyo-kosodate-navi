@@ -16,12 +16,8 @@ export default async function NurserySnippet({ ward }: Props) {
   const data = await getNurseryData(ward)
   if (!data) return null
 
-  const { facility, waiting, trend } = data
-  const diff = DIFFICULTY_CONFIG[
-    waiting.total_waiting === 0 ? 'low'
-    : waiting.total_waiting < 10 ? 'mid'
-    : 'high'
-  ]
+  const { facility, waiting, trend, difficulty, application_ratio } = data
+  const diff = DIFFICULTY_CONFIG[difficulty]
 
   // 5年間の待機児童トレンド（改善 / 悪化 / 横ばい）
   const firstWaiting = trend[0]?.total_waiting ?? 0
@@ -68,6 +64,9 @@ export default async function NurserySnippet({ ward }: Props) {
           </div>
           <div className={`text-[10px] mt-0.5 font-medium ${diff.color}`}>
             {diff.dot} 入園難易度 {diff.label}
+          </div>
+          <div className={`text-[10px] mt-0.5 ${diff.color}`}>
+            認可倍率 {application_ratio.toFixed(2)}×
           </div>
         </div>
 

@@ -54,17 +54,20 @@ export interface TrendRow {
   total_waiting:        number
   capacity_estimated:   boolean  // true = 推計値
   yoy_waiting:          number | null  // 前年比（待機児童数の差分）
+  application_ratio:    number   // 認可倍率 = 出生数 / (認可定員 / 6)
   difficulty:           'high' | 'mid' | 'low'
   comment_key:          string  // コメントテンプレートのキー
 }
 
 export interface NurseryData {
-  ward:           string
-  latest_year:    number
-  facility:       FacilitySummary
-  waiting:        WaitingSummary
-  trend:          TrendRow[]
-  trend_comment:  string
+  ward:              string
+  latest_year:       number
+  facility:          FacilitySummary
+  waiting:           WaitingSummary
+  trend:             TrendRow[]
+  trend_comment:     string
+  application_ratio: number               // 最新年度の認可倍率 = 出生数 / (認可定員 / 6)
+  difficulty:        'high' | 'mid' | 'low'  // 認可倍率ベースの難易度
 }
 
 // =============================================
@@ -74,11 +77,25 @@ export interface NurseryData {
 const LATEST_YEAR = 2024
 const TREND_YEARS = [2020, 2021, 2022, 2023, 2024]
 
-function calcDifficulty(waiting: number, capacity: number): 'high' | 'mid' | 'low' {
-  if (capacity === 0) return 'high'
-  const rate = (waiting / capacity) * 100
-  if (rate >= 3) return 'high'
-  if (rate >= 1) return 'mid'
+/**
+ * 認可倍率 = 出生数 / (認可定員 ÷ 6)
+ * 1学年あたり定員に対して何人の出生数があるかを示す倍率。
+ * 1.0 = 需給均衡、> 1.0 = 需要超過（競争激化）
+ */
+function calcApplicationRatio(birthCount: number, recognizedCapacity: number): number {
+  if (recognizedCapacity === 0) return 9.99
+  return birthCount / (recognizedCapacity / 6)
+}
+
+/**
+ * 認可倍率から入園難易度を判定
+ * ≥ 1.8 → high（🔴）: 需要が定員の1.8倍以上
+ * ≥ 1.3 → mid（🟡）: 需要が定員の1.3倍以上
+ * < 1.3 → low（🟢）: 比較的入りやすい
+ */
+function calcDifficulty(ratio: number): 'high' | 'mid' | 'low' {
+  if (ratio >= 1.8) return 'high'
+  if (ratio >= 1.3) return 'mid'
   return 'low'
 }
 
@@ -202,8 +219,9 @@ function buildFromSeed(ward: string): NurseryData | null {
     const births      = birthRec?.birth_count ?? 0
     const isEstimated = facTrend.some(f => f.estimated)
 
-    const yoy = prevWaiting !== null ? totalWait - prevWaiting : null
-    prevWaiting = totalWait
+    const yoy      = prevWaiting !== null ? totalWait - prevWaiting : null
+    prevWaiting    = totalWait
+    const appRatio = calcApplicationRatio(births, totalCap)
 
     trend.push({
       fiscal_year:        year,
@@ -212,20 +230,25 @@ function buildFromSeed(ward: string): NurseryData | null {
       total_waiting:      totalWait,
       capacity_estimated: isEstimated,
       yoy_waiting:        yoy,
-      difficulty:         calcDifficulty(totalWait, totalCap),
+      application_ratio:  appRatio,
+      difficulty:         calcDifficulty(appRatio),
       comment_key:        '',
     })
   }
 
   const trendComment = buildTrendComment(trend)
+  const latestTrend  = trend[trend.length - 1]
+  const appRatio     = latestTrend?.application_ratio ?? 0
 
   return {
     ward,
-    latest_year:   LATEST_YEAR,
+    latest_year:       LATEST_YEAR,
     facility,
     waiting,
     trend,
-    trend_comment: trendComment,
+    trend_comment:     trendComment,
+    application_ratio: appRatio,
+    difficulty:        calcDifficulty(appRatio),
   }
 }
 
@@ -273,6 +296,7 @@ export interface WardCompareItem {
   total_capacity:      number   // 最新年度 認可定員合計
   total_count:         number   // 最新年度 施設数合計
   total_waiting:       number   // 最新年度 待機児童数
+  application_ratio:   number   // 最新年度 認可倍率 = 出生数 / (認可定員 / 6)
   difficulty:          'high' | 'mid' | 'low'
   birth_latest:        number   // 最新年度 出生数
   waiting_change_5y:   number   // 5年間待機変化（最新 - 最古）
@@ -298,7 +322,8 @@ export async function getAllWardsCompare(): Promise<WardCompareItem[]> {
         total_capacity:    d.facility.total_capacity,
         total_count:       d.facility.total_count,
         total_waiting:     d.waiting.total_waiting,
-        difficulty:        calcDifficulty(d.waiting.total_waiting, d.facility.total_capacity),
+        application_ratio: d.application_ratio,
+        difficulty:        d.difficulty,
         birth_latest:      lastTrend?.birth_count        ?? 0,
         waiting_change_5y: (lastTrend?.total_waiting ?? 0) - (firstTrend?.total_waiting ?? 0),
         trend_comment:     d.trend_comment,

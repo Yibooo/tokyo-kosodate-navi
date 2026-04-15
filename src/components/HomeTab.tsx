@@ -306,39 +306,47 @@ function FacilitySection({ data }: { data: NurseryData }) {
 // =============================================
 
 function WaitingSection({ data }: { data: NurseryData }) {
-  const { waiting } = data
-  const diff = DIFFICULTY_CONFIG[
-    waiting.total_waiting === 0 ? 'low'
-    : waiting.total_waiting < 10 ? 'mid'
-    : 'high'
-  ]
+  const { waiting, application_ratio, difficulty } = data
+  const diff = DIFFICULTY_CONFIG[difficulty]
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
         <h2 className="font-bold text-gray-800 flex items-center gap-2">
-          <span>📋</span> 待機児童数
+          <span>📋</span> 待機児童・入園難易度
         </h2>
         <span className="text-xs text-gray-400">{waiting.fiscal_year}年4月1日時点</span>
       </div>
 
       <div className="px-5 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
+          {/* 待機児童数 */}
           <div>
+            <div className="text-xs text-gray-400 mb-0.5">待機児童数（国定義）</div>
             <div className="text-3xl font-extrabold text-gray-900">
               {waiting.total_waiting.toLocaleString()}
               <span className="text-base font-normal text-gray-400 ml-1">名</span>
             </div>
-            <div className="text-xs text-gray-400 mt-1">
-              厚生労働省定義の待機児童数（{waiting.fiscal_year}年度）
-            </div>
           </div>
-          <div className={`text-center px-5 py-3 rounded-xl ${diff.bg}`}>
+          {/* 認可倍率バッジ */}
+          <div className={`text-center px-5 py-3 rounded-xl ${diff.bg} shrink-0`}>
             <div className="text-2xl">{diff.dot}</div>
-            <div className={`text-xs font-bold mt-1 ${diff.color}`}>
+            <div className={`text-xs font-bold mt-0.5 ${diff.color}`}>
               入園難易度 {diff.label}
             </div>
+            <div className={`text-[11px] font-semibold mt-0.5 ${diff.color}`}>
+              認可倍率 {application_ratio.toFixed(2)}×
+            </div>
           </div>
+        </div>
+
+        {/* 認可倍率の説明 */}
+        <div className="mt-3 pt-3 border-t border-gray-50 text-xs text-gray-500 flex items-start gap-2 bg-blue-50 rounded-lg px-3 py-2">
+          <span className="shrink-0">📐</span>
+          <span>
+            <span className="font-semibold">認可倍率</span>＝出生数 ÷（認可定員 ÷ 6）。
+            1学年あたり定員に対する出生数の倍率。1.0超 = 競争あり、1.8以上 = 激戦。
+          </span>
         </div>
 
         {waiting.total_hidden_waiting !== null && (
@@ -379,28 +387,23 @@ function TrendSection({ data }: { data: NurseryData }) {
 
       {/* トレンドテーブル */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm" style={{ minWidth: '460px' }}>
+        <table className="w-full text-sm" style={{ minWidth: '540px' }}>
           <thead>
             <tr className="bg-gray-50 text-xs text-gray-500">
               <th className="text-left px-5 py-2.5 font-medium">年度</th>
               <th className="text-right px-4 py-2.5 font-medium">出生数</th>
               <th className="text-right px-4 py-2.5 font-medium">認可定員</th>
+              <th className="text-right px-4 py-2.5 font-medium">認可倍率</th>
               <th className="text-right px-4 py-2.5 font-medium">待機児童</th>
-              <th className="text-right px-5 py-2.5 font-medium">前年比</th>
               <th className="text-center px-4 py-2.5 font-medium">難易度</th>
             </tr>
           </thead>
           <tbody>
             {trend.map((row: TrendRow) => {
               const diff = DIFFICULTY_CONFIG[row.difficulty]
-              const yoyDisplay = row.yoy_waiting === null ? '—'
-                : row.yoy_waiting === 0 ? '±0'
-                : row.yoy_waiting > 0
-                  ? `↑ +${row.yoy_waiting}`
-                  : `↓ ${row.yoy_waiting}`
-              const yoyColor = row.yoy_waiting === null || row.yoy_waiting === 0
-                ? 'text-gray-400'
-                : row.yoy_waiting > 0 ? 'text-red-500' : 'text-green-600'
+              const ratioColor = row.application_ratio >= 1.8 ? 'text-red-600'
+                : row.application_ratio >= 1.3 ? 'text-yellow-600'
+                : 'text-green-600'
 
               return (
                 <tr key={row.fiscal_year} className="border-t border-gray-50 hover:bg-gray-50 transition">
@@ -427,11 +430,11 @@ function TrendSection({ data }: { data: NurseryData }) {
                       <span className="text-[10px] text-gray-300 ml-1">推</span>
                     )}
                   </td>
+                  <td className={`px-4 py-3 text-right tabular-nums font-semibold text-sm ${ratioColor}`}>
+                    {row.application_ratio.toFixed(2)}×
+                  </td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-800 tabular-nums">
                     {row.total_waiting}
-                  </td>
-                  <td className={`px-5 py-3 text-right tabular-nums text-xs font-medium ${yoyColor}`}>
-                    {yoyDisplay}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${diff.bg} ${diff.color}`}>

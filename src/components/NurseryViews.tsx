@@ -58,7 +58,7 @@ export function NurseryCompareView() {
     {
       key:    '待機児童数',
       render: (d: NurseryData) => {
-        const diff = DIFFICULTY_CONFIG[d.waiting.total_waiting === 0 ? 'low' : d.waiting.total_waiting < 10 ? 'mid' : 'high']
+        const diff = DIFFICULTY_CONFIG[d.difficulty]
         return (
           <span className="font-bold text-gray-900">
             {d.waiting.total_waiting}<span className="text-xs text-gray-400 ml-0.5">名</span>
@@ -68,12 +68,15 @@ export function NurseryCompareView() {
       },
     },
     {
-      key:    '入園難易度',
+      key:    '認可倍率',
       render: (d: NurseryData) => {
-        const diff = DIFFICULTY_CONFIG[d.waiting.total_waiting === 0 ? 'low' : d.waiting.total_waiting < 10 ? 'mid' : 'high']
+        const diff = DIFFICULTY_CONFIG[d.difficulty]
         return (
-          <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${diff.bg} ${diff.color}`}>
-            {diff.dot} 難易度 {diff.label}
+          <span className={`font-bold text-sm ${diff.color}`}>
+            {d.application_ratio.toFixed(2)}×
+            <span className={`ml-2 inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${diff.bg} ${diff.color}`}>
+              {diff.dot} 難易度 {diff.label}
+            </span>
           </span>
         )
       },
