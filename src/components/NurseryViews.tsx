@@ -254,8 +254,9 @@ export function NurseryRankingView() {
                 <th className="text-right px-4 py-2.5 font-medium">待機児童</th>
                 <th className="text-right px-3 py-2.5 font-medium hidden sm:table-cell">認可定員</th>
                 <th className="text-right px-4 py-2.5 font-medium hidden sm:table-cell">出生数</th>
+                <th className="text-right px-4 py-2.5 font-medium hidden sm:table-cell">認可倍率</th>
                 <th className="text-center px-4 py-2.5 font-medium">難易度</th>
-                <th className="text-left px-4 py-2.5 font-medium hidden md:table-cell w-40">5年変化</th>
+                <th className="text-left px-4 py-2.5 font-medium hidden md:table-cell w-32">5年変化</th>
               </tr>
             </thead>
             <tbody>
@@ -308,6 +309,10 @@ export function NurseryRankingView() {
                     <td className="px-4 py-3 text-right text-gray-600 tabular-nums hidden sm:table-cell">
                       {item.birth_latest.toLocaleString()}
                       <span className="text-xs text-gray-400 ml-0.5">人</span>
+                    </td>
+                    {/* 認可倍率 */}
+                    <td className={`px-4 py-3 text-right tabular-nums font-semibold text-sm hidden sm:table-cell ${diff.color}`}>
+                      {item.application_ratio.toFixed(2)}×
                     </td>
                     {/* 難易度 */}
                     <td className="px-4 py-3 text-center">
