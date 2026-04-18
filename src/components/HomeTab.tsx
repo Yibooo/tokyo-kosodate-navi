@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import SearchForm from '@/components/SearchForm'
 import Link from 'next/link'
 import { NurseryCompareView, NurseryRankingView } from '@/components/NurseryViews'
+import MansionTab from '@/components/MansionTab'
 import {
   SUPPORTED_WARDS,
   DIFFICULTY_CONFIG,
@@ -12,22 +13,25 @@ import {
 } from '@/lib/childcare'
 
 type NurseryView = 'single' | 'compare' | 'ranking'
+type Tab = 'subsidy' | 'nursery' | 'mansion'
 
 // =============================================
 // メインコンポーネント：ホームタブ切替
 // =============================================
 
 export default function HomeTab() {
-  const [tab, setTab] = useState<'subsidy' | 'nursery'>('subsidy')
+  const [tab, setTab] = useState<Tab>('subsidy')
 
   // URLハッシュでタブ状態を保持（リロード耐性）
   useEffect(() => {
     if (window.location.hash === '#nursery') setTab('nursery')
+    if (window.location.hash === '#mansion') setTab('mansion')
   }, [])
 
-  const switchTab = (t: 'subsidy' | 'nursery') => {
+  const switchTab = (t: Tab) => {
     setTab(t)
-    history.replaceState(null, '', t === 'nursery' ? '#nursery' : '#')
+    const hash = t === 'nursery' ? '#nursery' : t === 'mansion' ? '#mansion' : '#'
+    history.replaceState(null, '', hash)
   }
 
   return (
@@ -38,23 +42,28 @@ export default function HomeTab() {
           active={tab === 'subsidy'}
           onClick={() => switchTab('subsidy')}
           icon="💴"
-          label="補助金・支援制度"
+          label="補助金"
         />
         <TabButton
           active={tab === 'nursery'}
           onClick={() => switchTab('nursery')}
           icon="🏫"
-          label="保育園情報"
+          label="保育園"
+          beta
+        />
+        <TabButton
+          active={tab === 'mansion'}
+          onClick={() => switchTab('mansion')}
+          icon="🏢"
+          label="新築マンション"
           beta
         />
       </div>
 
       {/* タブコンテンツ */}
-      {tab === 'subsidy' ? (
-        <SubsidyPanel />
-      ) : (
-        <NurseryPanel />
-      )}
+      {tab === 'subsidy' && <SubsidyPanel />}
+      {tab === 'nursery' && <NurseryPanel />}
+      {tab === 'mansion' && <MansionTab />}
     </div>
   )
 }
