@@ -28,13 +28,20 @@ import { scrapeOber }         from './scrapers/ober'
 import { scrapeOpenhouse }    from './scrapers/openhouse'
 import { scrapeGenericSites } from './scrapers/generic'
 import { MANUAL_UPDATE_ENTRIES } from './scrapers/dynamic-sites'
+import { scrapeSuumo, WARD_CODES } from './scrapers/suumo'
 import { mergeRecords, writeSeedFile } from './lib/seed-writer'
 import type { MansionRecord } from '../src/lib/seed-mansions'
 
 // コマンドライン引数
-const args       = process.argv.slice(2)
-const isDryRun   = args.includes('--dry-run')
-const manualOnly = args.includes('--merge-manual')
+const args         = process.argv.slice(2)
+const isDryRun     = args.includes('--dry-run')
+const manualOnly   = args.includes('--merge-manual')
+const suumoOnly    = args.includes('--suumo')
+const useSuumo     = suumoOnly || args.includes('--with-suumo')
+
+// --ward 江戸川区  で特定区のみ対象
+const wardIdx   = args.indexOf('--ward')
+const wardTarget = wardIdx !== -1 ? args[wardIdx + 1] : null
 
 // 今日の日付
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -62,6 +69,8 @@ async function main() {
   console.log(`📅  実行日: ${TODAY}`)
   if (isDryRun)   console.log('🔍  DRY RUN モード（ファイル書き込みなし）')
   if (manualOnly) console.log('✍️   手動エントリのみモード')
+  if (suumoOnly)  console.log('🏢  SUUMOスクレイパーのみモード')
+  if (wardTarget) console.log(`📍  対象区: ${wardTarget}`)
   console.log('========================================\n')
 
   // 既存 seed 読み込み
@@ -71,7 +80,7 @@ async function main() {
   // スクレイピング実行
   const scraped: MansionRecord[] = []
 
-  if (!manualOnly) {
+  if (!manualOnly && !suumoOnly) {
     try {
       const oberResults = await scrapeOber()
       scraped.push(...oberResults)
@@ -94,6 +103,22 @@ async function main() {
       console.log()
     } catch (e) {
       console.error('汎用スクレイパー エラー:', e)
+    }
+  }
+
+  // SUUMO スクレイパー
+  if (useSuumo) {
+    try {
+      const targetWards = wardTarget
+        ? [wardTarget]
+        : Object.keys(WARD_CODES)
+
+      console.log(`\n🌐  SUUMO スクレイピング開始（${targetWards.length}区）`)
+      const suumoResults = await scrapeSuumo(targetWards)
+      scraped.push(...suumoResults)
+      console.log(`\n📦  SUUMO 合計: ${suumoResults.length} 件取得\n`)
+    } catch (e) {
+      console.error('SUUMO スクレイピングエラー:', e)
     }
   }
 
