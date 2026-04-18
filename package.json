@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "scrape": "tsx scripts/scrape-mansions.ts",
+    "scrape:dry": "tsx scripts/scrape-mansions.ts --dry-run",
+    "scrape:manual": "tsx scripts/scrape-mansions.ts --merge-manual"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -26,9 +29,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cheerio": "^1.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
