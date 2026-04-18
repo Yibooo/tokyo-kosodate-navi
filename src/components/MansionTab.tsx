@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import MansionList from '@/components/MansionList'
+import MansionMap  from '@/components/MansionMap'
 import {
   getMansionsByWard,
   getMansionWards,
@@ -9,6 +10,8 @@ import {
   type MansionFilter,
   type MansionStatus,
 } from '@/lib/mansions'
+
+type View = 'list' | 'map'
 
 const ALL_STATUSES: MansionStatus[] = ['建築予定', '建築中', '分譲中']
 
@@ -25,6 +28,7 @@ export default function MansionTab() {
   // 区選択（デフォルト: seedにデータがある最初の区）
   const availableWards  = useMemo(() => getMansionWards(), [])
   const [ward, setWard] = useState<string>(availableWards[0] ?? ALL_WARDS[0])
+  const [view, setView] = useState<View>('list')
 
   // フィルター状態
   const [selectedStatuses, setSelectedStatuses] = useState<MansionStatus[]>([...ALL_STATUSES])
@@ -161,6 +165,27 @@ export default function MansionTab() {
         </div>
       </div>
 
+      {/* ビュートグル */}
+      <div className="flex rounded-xl bg-gray-100 p-1 gap-1">
+        {([
+          { key: 'list', icon: '📋', label: '一覧表' },
+          { key: 'map',  icon: '🗺️', label: 'マップ' },
+        ] as { key: View; icon: string; label: string }[]).map(btn => (
+          <button
+            key={btn.key}
+            onClick={() => setView(btn.key)}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+              view === btn.key
+                ? 'bg-white shadow text-gray-900'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <span>{btn.icon}</span>
+            <span>{btn.label}</span>
+          </button>
+        ))}
+      </div>
+
       {/* コンテンツ */}
       {!hasData ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center text-gray-400">
@@ -168,8 +193,19 @@ export default function MansionTab() {
           <p className="text-sm font-medium">{ward}のデータは現在準備中です</p>
           <p className="text-xs mt-1">月次更新でデータを追加予定</p>
         </div>
-      ) : (
+      ) : view === 'list' ? (
         <MansionList mansions={mansions} />
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          {/* マップヘッダー */}
+          <div className="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+            <span className="text-xs text-gray-500">
+              <span className="font-bold text-gray-800 text-sm">{mansions.length}</span> 件を地図表示
+            </span>
+            <span className="text-[10px] text-gray-300">OpenStreetMap</span>
+          </div>
+          <MansionMap mansions={mansions} />
+        </div>
       )}
 
       <p className="text-[10px] text-gray-300 text-center px-4">
