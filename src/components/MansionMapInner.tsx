@@ -2,11 +2,13 @@
 
 // Leaflet CSS はここで import（SSR無効時のみ読み込まれる）
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 
 import { useEffect, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import Link from 'next/link'
+import 'leaflet.markercluster'
 import { STATUS_CONFIG, type MansionRecord, type MansionStatus } from '@/lib/mansions'
 
 // =============================================
@@ -34,27 +36,134 @@ function createIcon(status: MansionStatus): L.DivIcon {
     className:   '',
     iconSize:    [14, 14],
     iconAnchor:  [7, 7],
-    popupAnchor: [0, -10],
+    popupAnchor: [0, -14],
   })
 }
 
 // =============================================
-// 地図中心を物件群に自動フィット
+// ポップアップ HTML（leaflet.bindPopup 用）
 // =============================================
 
-function MapBoundsUpdater({ mansions }: { mansions: MansionRecord[] }) {
-  const map = useMap()
-  const prevWard = useRef<string>('')
+function buildPopupHtml(m: MansionRecord): string {
+  const sc   = STATUS_CONFIG[m.status]
+  const color = PIN_COLORS[m.status]
+
+  const unitsRow = m.total_units
+    ? `<tr><td style="color:#9ca3af;padding-right:8px;padding-bottom:2px;white-space:nowrap">総戸数</td><td style="font-weight:600;color:#1f2937">${m.total_units}戸</td></tr>`
+    : ''
+  const areaRow = (m.area_min || m.area_max)
+    ? `<tr><td style="color:#9ca3af;padding-right:8px;padding-bottom:2px;white-space:nowrap">専有面積</td><td style="font-weight:600;color:#1f2937">${
+        m.area_min && m.area_max
+          ? `${m.area_min}〜${m.area_max}㎡`
+          : `${m.area_min ?? m.area_max}㎡〜`
+      }</td></tr>`
+    : ''
+  const deliveryRow = m.delivery
+    ? `<tr><td style="color:#9ca3af;padding-right:8px;padding-bottom:2px;white-space:nowrap">引渡</td><td style="font-weight:600;color:#1f2937">${m.delivery}</td></tr>`
+    : ''
+  const floorsRow = m.floors
+    ? `<tr><td style="color:#9ca3af;padding-right:8px;padding-bottom:2px;white-space:nowrap">階数</td><td style="font-weight:600;color:#1f2937">${m.floors}階建て</td></tr>`
+    : ''
+
+  return `
+    <div style="font-size:12px;line-height:1.6;min-width:200px">
+      <div style="font-weight:700;font-size:14px;color:#111827;margin-bottom:4px;line-height:1.3">${m.name}</div>
+      <span style="
+        display:inline-flex;align-items:center;gap:4px;
+        font-size:11px;font-weight:700;padding:2px 8px;
+        border-radius:9999px;margin-bottom:8px;
+        background-color:${sc.bg.replace('bg-', '').includes('[') ? '' : ''};
+        color:${color};
+        border:1.5px solid ${color};
+      ">${sc.pin} ${sc.label}</span>
+      <div style="color:#6b7280;margin-bottom:6px">${m.developers.join(' / ')}</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <tbody>
+          ${unitsRow}${areaRow}${deliveryRow}${floorsRow}
+        </tbody>
+      </table>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6">
+        <a
+          href="${m.url}"
+          target="_blank"
+          rel="noopener noreferrer"
+          style="font-size:11px;font-weight:700;color:#2563eb;text-decoration:none"
+        >公式ページを見る →</a>
+      </div>
+    </div>
+  `
+}
+
+// =============================================
+// クラスタリングレイヤー（leaflet.markercluster 直接操作）
+// =============================================
+
+function ClusterLayer({ mansions }: { mansions: MansionRecord[] }) {
+  const map       = useMap()
+  const mcgRef    = useRef<L.MarkerClusterGroup | null>(null)
 
   useEffect(() => {
+    // 既存クラスタを削除
+    if (mcgRef.current) {
+      map.removeLayer(mcgRef.current)
+      mcgRef.current = null
+    }
     if (mansions.length === 0) return
-    const currentWard = mansions[0]?.ward ?? ''
-    if (currentWard === prevWard.current) return
-    prevWard.current = currentWard
 
+    // クラスタグループ生成
+    const mcg = L.markerClusterGroup({
+      maxClusterRadius:    50,
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom:   true,
+      disableClusteringAtZoom: 17,
+      iconCreateFunction: (cluster) => {
+        const count = cluster.getChildCount()
+        // 件数に応じてサイズを変える
+        const size  = count < 5 ? 34 : count < 15 ? 40 : 46
+        return L.divIcon({
+          html: `
+            <div style="
+              width:${size}px;height:${size}px;
+              border-radius:50%;
+              background:rgba(37,99,235,0.85);
+              border:3px solid white;
+              box-shadow:0 2px 8px rgba(0,0,0,0.35);
+              display:flex;align-items:center;justify-content:center;
+              font-size:${count < 10 ? 13 : 11}px;
+              font-weight:700;color:white;
+              line-height:1;
+            ">${count}</div>
+          `,
+          className:  '',
+          iconSize:   [size, size],
+          iconAnchor: [size / 2, size / 2],
+        })
+      },
+    })
+
+    // 各物件をマーカーとして追加
+    for (const m of mansions) {
+      const marker = L.marker([m.lat, m.lng], { icon: createIcon(m.status) })
+      marker.bindPopup(buildPopupHtml(m), { minWidth: 220, maxWidth: 260 })
+      mcg.addLayer(marker)
+    }
+
+    map.addLayer(mcg)
+    mcgRef.current = mcg
+
+    // fitBounds
     const bounds = L.latLngBounds(mansions.map(m => [m.lat, m.lng]))
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
-  }, [mansions, map])
+
+    return () => {
+      if (mcgRef.current) {
+        map.removeLayer(mcgRef.current)
+        mcgRef.current = null
+      }
+    }
+  // mansions が変わったときだけ再実行（mapは不変）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mansions])
 
   return null
 }
@@ -86,6 +195,16 @@ export default function MansionMapInner({ mansions }: Props) {
             </div>
           )
         )}
+        {/* クラスタ凡例 */}
+        <div className="flex items-center gap-2 pt-1 mt-0.5 border-t border-gray-100">
+          <div
+            className="w-5 h-5 rounded-full border-2 border-white shrink-0 flex items-center justify-center text-[9px] font-bold text-white"
+            style={{ backgroundColor: 'rgba(37,99,235,0.85)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
+          >
+            n
+          </div>
+          <span className="text-gray-500">複数物件</span>
+        </div>
       </div>
 
       {/* Leaflet マップ */}
@@ -100,19 +219,7 @@ export default function MansionMapInner({ mansions }: Props) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <MapBoundsUpdater mansions={mansions} />
-
-        {mansions.map(m => (
-          <Marker
-            key={m.id}
-            position={[m.lat, m.lng]}
-            icon={createIcon(m.status)}
-          >
-            <Popup minWidth={220} maxWidth={260}>
-              <MansionPopup mansion={m} />
-            </Popup>
-          </Marker>
-        ))}
+        <ClusterLayer mansions={mansions} />
       </MapContainer>
 
       {mansions.length === 0 && (
@@ -123,72 +230,6 @@ export default function MansionMapInner({ mansions }: Props) {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-// =============================================
-// ポップアップ内容
-// =============================================
-
-function MansionPopup({ mansion: m }: { mansion: MansionRecord }) {
-  const sc = STATUS_CONFIG[m.status]
-  return (
-    <div className="text-xs leading-relaxed min-w-[200px]">
-      {/* 物件名 + ステータス */}
-      <div className="font-bold text-sm text-gray-900 mb-1 leading-tight">{m.name}</div>
-      <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full mb-2 ${sc.bg} ${sc.color}`}>
-        {sc.pin} {sc.label}
-      </span>
-
-      {/* デベロッパー */}
-      <div className="text-gray-500 mb-1">{m.developers.join(' / ')}</div>
-
-      {/* 主要スペック */}
-      <table className="w-full text-xs border-collapse">
-        <tbody>
-          {m.total_units && (
-            <tr>
-              <td className="text-gray-400 pr-2 py-0.5 whitespace-nowrap">総戸数</td>
-              <td className="font-semibold text-gray-800">{m.total_units}戸</td>
-            </tr>
-          )}
-          {(m.area_min || m.area_max) && (
-            <tr>
-              <td className="text-gray-400 pr-2 py-0.5 whitespace-nowrap">専有面積</td>
-              <td className="font-semibold text-gray-800">
-                {m.area_min && m.area_max
-                  ? `${m.area_min}〜${m.area_max}㎡`
-                  : `${m.area_min ?? m.area_max}㎡〜`}
-              </td>
-            </tr>
-          )}
-          {m.delivery && (
-            <tr>
-              <td className="text-gray-400 pr-2 py-0.5 whitespace-nowrap">引渡</td>
-              <td className="font-semibold text-gray-800">{m.delivery}</td>
-            </tr>
-          )}
-          {m.floors && (
-            <tr>
-              <td className="text-gray-400 pr-2 py-0.5 whitespace-nowrap">階数</td>
-              <td className="font-semibold text-gray-800">{m.floors}階建て</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      {/* 公式リンク */}
-      <div className="mt-2 pt-2 border-t border-gray-100">
-        <Link
-          href={m.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800"
-        >
-          公式ページを見る →
-        </Link>
-      </div>
     </div>
   )
 }
