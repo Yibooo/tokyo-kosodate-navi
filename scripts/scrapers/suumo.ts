@@ -18,9 +18,9 @@ import { geocode, sleep } from '../lib/geocode'
 
 const BASE_URL   = 'https://suumo.jp'
 const TODAY      = new Date().toISOString().slice(0, 10)
-const USER_AGENT = 'tokyo-kosodate-navi/1.0 (https://github.com/Yibooo/tokyo-kosodate-navi)'
-const FETCH_DELAY = 1500   // ms between requests (SUUMO規約準拠)
-const GEO_DELAY   = 1200   // ms between Nominatim requests
+const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+const FETCH_DELAY = 800    // ms between requests
+const GEO_DELAY   = 1100   // ms between Nominatim requests (最小1req/sec)
 
 // =============================================
 // 23区 → SUUMOのscコード マッピング
@@ -78,13 +78,23 @@ async function fetchHtml(url: string): Promise<string | null> {
  * 価格行・間取り行・UIボタンなどのゴミを除外する
  */
 function isValidPropertyName(name: string): boolean {
-  if (!name || name.trim().length < 4)      return false   // 短すぎる
-  if (/\n/.test(name))                       return false   // 改行あり = 価格/間取りテキスト
-  if (/万円|㎡|LDK|SLDK|先着|価格未定/.test(name)) return false   // 価格・間取り文字列
-  if (/間取り|詳細表示|タイプ別|階建/.test(name))  return false   // UIテキスト
-  if (/^\d/.test(name.trim()))               return false   // 数字始まり = 価格
-  if (/^[A-Z0-9F\s]+$/.test(name.trim()))   return false   // 英数フロア番号のみ
+  if (!name || name.trim().length < 4)                       return false
+  if (/\n/.test(name))                                        return false   // 改行あり = 価格/間取りテキスト
+  if (/万円|㎡|LDK|SLDK|先着|価格未定/.test(name))          return false   // 価格・間取り文字列
+  if (/間取り|詳細表示|タイプ別|階建/.test(name))             return false   // UIテキスト
+  if (/物件TOP|フロアプラン|モデルルーム/.test(name))          return false   // タブナビゲーション
+  if (/^\d/.test(name.trim()))                               return false   // 数字始まり = 価格
+  if (/^[A-Z0-9F\s]+$/.test(name.trim()))                   return false   // 英数フロア番号のみ
   return true
+}
+
+/** 物件名からタブナビゲーション残滓を除去 */
+function cleanPropertyName(name: string): string {
+  return name
+    .replace(/（物件TOP）|（フロアプラン）|（モデルルーム）|（周辺環境）|（会社情報）/g, '')
+    .replace(/\(物件TOP\)|\(フロアプラン\)|\(モデルルーム\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 /**
@@ -109,9 +119,14 @@ async function collectPropertyUrls(
     let foundOnPage = 0
     $(`a[href*="/ms/shinchiku/tokyo/sc_${wardCode}/nc_"]`).each((_, el) => {
       const href = $(el).attr('href') ?? ''
-      const name = $(el).text().trim()
+      const rawName = $(el).text().trim()
+      const name = cleanPropertyName(rawName)
       if (isValidPropertyName(name) && href && !nameToUrl.has(name)) {
-        const fullUrl = href.startsWith('http') ? href : `${BASE_URL}${href}`
+        // https への統一・クエリパラメータの除去
+        let fullUrl = href.startsWith('http') ? href : `${BASE_URL}${href}`
+        fullUrl = fullUrl.replace(/^http:\/\//, 'https://')  // http → https
+        fullUrl = fullUrl.replace(/\?.*$/, '')               // クエリパラム除去
+        if (!fullUrl.endsWith('/')) fullUrl += '/'
         nameToUrl.set(name, fullUrl)
       }
       foundOnPage++
@@ -132,15 +147,59 @@ async function collectPropertyUrls(
 // 詳細ページのパース
 // =============================================
 
-/** dt テキストに対応する dd の値を返す */
-function getDdText($: cheerio.CheerioAPI, dtLabel: string): string | null {
+/**
+ * SUUMO の <th> ラベルに対応する <td> の値を返す
+ * 各 <tr> に th+td ペアが2組並ぶため、$(el).next('td') で直後の td を取得
+ */
+function getThText($: cheerio.CheerioAPI, label: string): string | null {
   let result: string | null = null
-  $('dt').each((_, el) => {
-    if ($(el).text().trim().includes(dtLabel)) {
-      result = $(el).next('dd').text().trim() || null
+  $('th').each((_, el) => {
+    if ($(el).text().trim().includes(label)) {
+      const text = $(el).next('td').text().replace(/\s+/g, ' ').trim()
+      if (text) {
+        result = text
+        return false  // break
+      }
     }
   })
   return result
+}
+
+/**
+ * kaishainfo ページから売主（デベロッパー）を抽出
+ * 構造: <dl class="detailtable_summary-info">
+ *         <dt>＜売主＞</dt><dd>免許番号</dd><dd>...会員</dd><dd>会社名</dd><dd>〒住所</dd>
+ *       </dl>
+ * または .pipelink_area_list-company が使える
+ */
+function extractDevelopersFromPage($: cheerio.CheerioAPI): string[] {
+  // 方法1: .pipelink_area_list-company（直接社名）
+  const companyEls = $('.pipelink_area_list-company')
+  if (companyEls.length > 0) {
+    const names = companyEls.map((_, el) => $(el).text().trim()).get()
+      .filter(s => s.length > 0)
+      .slice(0, 3)
+    if (names.length > 0) return names
+  }
+
+  // 方法2: <dt>＜売主＞</dt> → 直後の <dd> から会社名を探す
+  let found: string[] = []
+  $('dt').each((_, el) => {
+    if ($(el).text().includes('売主')) {
+      $(el).nextAll('dd').each((_, dd) => {
+        const text = $(dd).text().trim()
+        // 免許番号・会員情報・住所はスキップ
+        if (text.match(/^〒|大臣|都知事|協会|加盟|^\d{2,}|^[（(]/)) return
+        if (text.length > 2 && text.length < 50) {
+          found.push(text.replace(/株式会社|有限会社|合同会社|（株）|㈱/g, '').trim())
+        }
+      })
+      return false  // break
+    }
+  })
+  if (found.length > 0) return found.slice(0, 3)
+
+  return ['不明']
 }
 
 /** "54.62m²～72.01m²" → { min: 54.62, max: 72.01 } */
@@ -161,6 +220,19 @@ function parseFloors(text: string): number | null {
 function parseUnits(text: string): number | null {
   const m = text.match(/^(\d+)/)
   return m ? parseInt(m[1]) : null
+}
+
+/** "56台収容（料金未定）" → 56 */
+function parseBicycleParking(text: string): number | null {
+  const m = text.match(/^(\d+)\s*台/)
+  return m ? parseInt(m[1]) : null
+}
+
+/** "12345.67m²" → 12345.67 */
+function parseSiteArea(text: string): number | null {
+  const m = text.match(/([\d,]+(?:\.\d+)?)\s*m[²2]/)
+  if (!m) return null
+  return parseFloat(m[1].replace(/,/g, ''))
 }
 
 /** 売主テキストから法人格を除去してデベロッパー名を抽出 */
@@ -194,58 +266,103 @@ function extractWard(address: string): string | null {
   return KNOWN_WARDS.find(w => address.includes(w)) ?? null
 }
 
-/** 詳細ページ1件を MansionRecord にパース */
+/**
+ * 詳細ページ1件を MansionRecord にパース
+ * 3ページ取得:
+ *   nc_XXXXX/          → 物件名・基本情報
+ *   nc_XXXXX/property/ → 建物概要（構造・階建て, 完成時期, 敷地面積, 駐車場 etc.）
+ *   nc_XXXXX/kaishainfo/ → 売主（デベロッパー）・施工会社
+ */
 async function parseDetailPage(
   url:      string,
   fallbackWard: string,
 ): Promise<Omit<MansionRecord, 'lat' | 'lng'> | null> {
-  const html = await fetchHtml(url)
-  if (!html) return null
+  // 正規化: URLを nc_XXXXX/ の形式に統一
+  const baseUrl = url
+    .replace(/^http:\/\//, 'https://')    // http → https
+    .replace(/\?.*$/, '')                  // クエリパラム除去
+    .replace(/\/$/, '')
+    .replace(/\/(property|kaishainfo|rooms|images|map|modelroom|report).*$/, '')
 
-  const $    = cheerio.load(html)
-  const body = $('body').text()
+  // トップページ: 物件名・基本情報
+  const topHtml = await fetchHtml(baseUrl + '/')
+  if (!topHtml) return null
+  const $top  = cheerio.load(topHtml)
+  const body  = $top('body').text()
 
-  // 物件名
-  const name = $('h1').first().text()
+  // 物件名 (h1から取得。価格・タブナビ残滓を除去)
+  const rawH1 = $top('h1').first().text()
     .replace(/\s+/g, ' ')
-    .replace(/\d+万円.*$/, '')
+    .replace(/\s+[\d０-９]+[億万][円\d０-９万億]*.*$/, '')  // 価格除去: "1億5800万円..." "3980万円..."
+    .replace(/\d+万円.*$/, '')                              // 念のため補完
     .trim()
+  const name = cleanPropertyName(rawH1)
   if (!name) return null
 
-  // 住所（東京都プレフィックスを除去して保存、ジオコード時に再付与）
-  const rawAddress = getDdText($, '所在地') ?? ''
+  // 住所（トップページから取得）
+  const rawAddress = getThText($top, '所在地') ?? ''
   const address    = rawAddress
-    .replace(/（地番）.*$/, '')
-    .replace(/\(地番\).*$/, '')
-    .replace(/^東京都/, '')   // 保存用: "港区..."
+    .replace(/（地番）.*$/, '').replace(/\(地番\).*$/, '')
+    .replace(/地図を見る.*$/, '')
+    .replace(/^東京都/, '')
     .trim() || fallbackWard
 
   const ward = extractWard(address) ?? fallbackWard
 
-  // デベロッパー（売主）
-  const developerRaw = getDdText($, '売主') ?? getDdText($, '販売会社') ?? ''
-  const developers   = developerRaw ? parseDevelopers(developerRaw) : ['不明']
-
-  // 数値フィールド
-  const unitsRaw  = getDdText($, '総戸数')       ?? ''
-  const areaRaw   = getDdText($, '専有面積')      ?? ''
-  const floorsRaw = getDdText($, '構造・階建て')  ?? getDdText($, '構造/階建て') ?? ''
-
+  // 基本フィールド（トップページ）
+  const unitsRaw  = getThText($top, '総戸数')  ?? ''
+  const areaRaw   = getThText($top, '専有面積') ?? ''
+  const deliveryRaw = getThText($top, '引渡可能時期') ?? getThText($top, '入居可能時期') ?? null
   const total_units = parseUnits(unitsRaw)
   const { min: area_min, max: area_max } = parseArea(areaRaw)
-  const floors = parseFloors(floorsRaw)
+  const delivery = deliveryRaw?.replace(/（.*?）/g, '').trim() || null
 
-  // 日程
-  const completionRaw = getDdText($, '完成時期')  ?? getDdText($, '竣工') ?? null
-  const deliveryRaw   = getDdText($, '引渡可能時期') ?? getDdText($, '入居可能時期') ?? null
-  const completion    = completionRaw?.replace(/（.*?）/g, '').trim() || null
-  const delivery      = deliveryRaw?.replace(/（.*?）/g, '').trim()  || null
+  await sleep(FETCH_DELAY)
 
-  // ステータス
+  // 物件概要ページ: 建物詳細
+  const propHtml = await fetchHtml(baseUrl + '/property/')
+  let floors: number | null         = null
+  let site_area: number | null      = null
+  let parking: string | null        = null
+  let bicycle_parking: number | null = null
+  let completion: string | null     = null
+
+  if (propHtml) {
+    const $p      = cheerio.load(propHtml)
+    const floorsRaw   = getThText($p, '構造・階建て') ?? getThText($p, '構造/階建て') ?? ''
+    const siteAreaRaw = getThText($p, '敷地面積')     ?? ''
+    const parkingRaw  = getThText($p, '駐車場')       ?? ''
+    const bicycleRaw  = getThText($p, '駐輪場')       ?? ''
+    const completionRaw = getThText($p, '完成時期')   ?? getThText($p, '竣工') ?? null
+
+    floors      = parseFloors(floorsRaw)
+    site_area   = parseSiteArea(siteAreaRaw)
+    parking     = parkingRaw || null
+    bicycle_parking = parseBicycleParking(bicycleRaw)
+    completion  = completionRaw?.replace(/（.*?）/g, '').replace(/下旬予定|上旬予定|中旬予定/g, s => s).trim() || null
+  }
+
+  await sleep(FETCH_DELAY)
+
+  // 会社情報ページ: 売主・施工
+  const kaishHtml = await fetchHtml(baseUrl + '/kaishainfo/')
+  let developers: string[]      = ['不明']
+  let constructor: string | null = null
+
+  if (kaishHtml) {
+    const $k = cheerio.load(kaishHtml)
+    developers  = extractDevelopersFromPage($k)
+    const constrRaw = getThText($k, '施工')
+    constructor = constrRaw
+      ? constrRaw.replace(/株式会社|有限会社|合同会社|（株）|㈱/g, '').trim() || null
+      : null
+  }
+
+  // ステータス（トップページ全体テキストで判定）
   const status = parseStatus(body)
 
-  // ID: suumo-nc_{id} 形式
-  const ncMatch = url.match(/\/nc_(\d+)/)
+  // ID
+  const ncMatch = baseUrl.match(/\/nc_(\d+)/)
   const id      = ncMatch ? `suumo-nc${ncMatch[1]}` : `suumo-${Date.now()}`
 
   return {
@@ -257,20 +374,20 @@ async function parseDetailPage(
     status,
     floors,
     total_units,
-    site_area:       null,
+    site_area,
     area_min,
     area_max,
     completion,
     delivery,
-    constructor:     null,
-    parking:         null,
-    bicycle_parking: null,
+    constructor,
+    parking,
+    bicycle_parking,
     ceiling_height:  null,
     floor_method:    null,
     disposer:        null,
     eco_type:        null,
     corridor:        null,
-    url,
+    url: baseUrl + '/',
     updated_at:      TODAY,
   }
 }
@@ -308,10 +425,27 @@ export async function scrapeWard(
       continue
     }
 
-    // Step3: ジオコード（東京都プレフィックス付きで精度向上）
-    const geoAddr = partial.address.startsWith('東京都')
+    // Step3: ジオコード（番地・号を除去して丁目レベルで検索）
+    const rawGeoAddr = partial.address.startsWith('東京都')
       ? partial.address
       : `東京都${partial.address}`
+    // Nominatim は番地レベルを認識しないため、丁目/町レベルに丸める
+    // 例: "西小岩１丁目2170" → "西小岩1丁目"
+    //     "平井６-1745（地番）、（ブリーズ…）" → "平井6丁目"
+    //     "一之江７-89-5" → "一之江7丁目"
+    const geoAddr = rawGeoAddr
+      .replace(/、.*$/, '')               // 複数住所: 最初の住所のみ使用
+      .replace(/（.*?）/g, '')            // 括弧内テキスト除去（地番・建物名等）
+      .replace(/\(.*?\)/g, '')
+      // 全角数字→半角（Nominatim は半角のみ認識）
+      .replace(/[０-９]/g, (c: string) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+      .replace(/(\d+丁目)\d+.*$/, '$1')  // "1丁目2170" → "1丁目"
+      .replace(/\d+番地?\d*号?.*$/, '')  // "21番地" "21番9号" → 除去
+      .replace(/-\d+(?:-\d+)*$/, '')     // "7-89-5" → "7"
+      // 末尾が数字のみ（丁目なし）の場合は "丁目" を補完
+      // 例: "一之江7" → "一之江7丁目" でNominatim認識率アップ
+      .replace(/([^丁目\d])(\d+)$/, '$1$2丁目')
+      .trim()
     const coords = await geocode(geoAddr)
     await sleep(GEO_DELAY)
 

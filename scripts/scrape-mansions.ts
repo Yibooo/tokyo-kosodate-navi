@@ -106,7 +106,7 @@ async function main() {
     }
   }
 
-  // SUUMO スクレイパー
+  // SUUMO スクレイパー（1区完了ごとに seed を中間保存）
   if (useSuumo) {
     try {
       const targetWards = wardTarget
@@ -114,9 +114,28 @@ async function main() {
         : Object.keys(WARD_CODES)
 
       console.log(`\n🌐  SUUMO スクレイピング開始（${targetWards.length}区）`)
-      const suumoResults = await scrapeSuumo(targetWards)
-      scraped.push(...suumoResults)
-      console.log(`\n📦  SUUMO 合計: ${suumoResults.length} 件取得\n`)
+
+      let suumoTotal = 0
+      for (const ward of targetWards) {
+        const { scrapeWard } = await import('./scrapers/suumo')
+        const wardCode = WARD_CODES[ward]
+        if (!wardCode) { console.warn(`⚠️  不明な区名: ${ward}`); continue }
+
+        const wardResults = await scrapeWard(ward, wardCode)
+        scraped.push(...wardResults)
+        suumoTotal += wardResults.length
+
+        // 1区完了ごとに中間保存（中断してもそれまでの区が保存される）
+        if (!isDryRun && wardResults.length > 0) {
+          const { merged: mid } = mergeRecords(existing, scraped)
+          writeSeedFile(mid, TODAY)
+          console.log(`  💾  中間保存: ${mid.length} 件`)
+        }
+
+        await new Promise(r => setTimeout(r, 2000))  // 区切りの待機
+      }
+
+      console.log(`\n📦  SUUMO 合計: ${suumoTotal} 件取得\n`)
     } catch (e) {
       console.error('SUUMO スクレイピングエラー:', e)
     }
