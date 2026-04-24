@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: '東京23区 子育て支援ナビ',
-  description: '港区・品川区・目黒区・江東区・江戸川区の子育て支援制度を一括検索。国・東京都・区の制度をまとめて確認。',
+  title: '首都圏新築マンションナビ',
+  description: '首都圏の新築マンション情報を一括検索。補助金・保育園情報も合わせて確認できます。',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

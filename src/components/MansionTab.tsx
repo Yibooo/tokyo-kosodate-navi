@@ -25,9 +25,12 @@ const STATUS_CHIP: Record<MansionStatus, { color: string; active: string }> = {
 const ALL_WARDS = WARD_ORDER
 
 export default function MansionTab() {
-  // 区選択（デフォルト: seedにデータがある最初の区）
+  // 区選択（デフォルト: 練馬区。データがなければseedにある最初の区）
   const availableWards  = useMemo(() => getMansionWards(), [])
-  const [ward, setWard] = useState<string>(availableWards[0] ?? ALL_WARDS[0])
+  const [ward, setWard] = useState<string>(() => {
+    const available = getMansionWards()
+    return available.includes('練馬区') ? '練馬区' : (available[0] ?? ALL_WARDS[0])
+  })
   const [view, setView] = useState<View>('list')
 
   // フィルター状態

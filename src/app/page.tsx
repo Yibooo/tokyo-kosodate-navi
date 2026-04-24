@@ -7,9 +7,8 @@ export default function HomePage() {
       {/* ナビゲーション */}
       <nav className="border-b border-blue-100 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2">
-          <span className="text-2xl">🍼</span>
-          <span className="font-bold text-blue-700 text-lg">子育て支援ナビ</span>
-          <span className="text-xs text-gray-400 ml-1 hidden sm:inline">首都圏対応</span>
+          <span className="text-2xl">🏢</span>
+          <span className="font-bold text-blue-700 text-lg">首都圏新築マンションナビ</span>
         </div>
       </nav>
 
@@ -71,7 +70,7 @@ export default function HomePage() {
       </main>
 
       <footer className="text-center text-xs text-gray-400 py-8 border-t border-gray-100 mt-8">
-        © 2026 子育て支援ナビ　|　情報は定期的に更新していますが、最新情報は各自治体にご確認ください。
+        © 2026 首都圏新築マンションナビ　|　情報は定期的に更新していますが、最新情報は各物件・自治体にご確認ください。
       </footer>
     </div>
   )

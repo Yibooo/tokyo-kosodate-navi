@@ -20,7 +20,7 @@ type Tab = 'subsidy' | 'nursery' | 'mansion'
 // =============================================
 
 export default function HomeTab() {
-  const [tab, setTab] = useState<Tab>('subsidy')
+  const [tab, setTab] = useState<Tab>('mansion')
 
   // URLハッシュでタブ状態を保持（リロード耐性）
   useEffect(() => {
@@ -39,6 +39,12 @@ export default function HomeTab() {
       {/* タブバー */}
       <div className="flex rounded-2xl bg-gray-100 p-1 mb-6 gap-1">
         <TabButton
+          active={tab === 'mansion'}
+          onClick={() => switchTab('mansion')}
+          icon="🏢"
+          label="新築マンション"
+        />
+        <TabButton
           active={tab === 'subsidy'}
           onClick={() => switchTab('subsidy')}
           icon="💴"
@@ -49,13 +55,6 @@ export default function HomeTab() {
           onClick={() => switchTab('nursery')}
           icon="🏫"
           label="保育園"
-          beta
-        />
-        <TabButton
-          active={tab === 'mansion'}
-          onClick={() => switchTab('mansion')}
-          icon="🏢"
-          label="新築マンション"
           beta
         />
       </div>

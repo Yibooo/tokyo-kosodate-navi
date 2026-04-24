@@ -22,7 +22,7 @@ const ROWS: RowDef[] = [
     render: m => <StatusBadge status={m.status} />,
   },
   {
-    label:  'デベロッパー',
+    label:  '売主',
     render: m => (
       <span className="text-xs leading-relaxed">
         {m.developers.join(' /\n')}
@@ -72,32 +72,12 @@ const ROWS: RowDef[] = [
     render: m => <span className="text-xs">{m.parking || '—'}</span>,
   },
   {
-    label:  '駐輪場',
-    render: m => m.bicycle_parking ? `${m.bicycle_parking}台` : '—',
-  },
-  {
-    label:  '天井高',
-    render: m => m.ceiling_height || '—',
-  },
-  {
-    label:  '工法',
-    render: m => m.floor_method || '—',
-  },
-  {
-    label:  'ディスポーザー',
-    render: m => m.disposer === true ? '✅ 有り' : m.disposer === false ? '無し' : '—',
-  },
-  {
     label:  'ZEH・低炭素',
     render: m => m.eco_type ? (
       <span className="text-[11px] font-semibold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
         🌿 {m.eco_type}
       </span>
     ) : '—',
-  },
-  {
-    label:  '廊下タイプ',
-    render: m => m.corridor || '—',
   },
 ]
 
