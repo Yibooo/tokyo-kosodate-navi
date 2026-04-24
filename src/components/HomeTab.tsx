@@ -35,9 +35,9 @@ export default function HomeTab() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       {/* タブバー */}
-      <div className="flex rounded-2xl bg-gray-100 p-1 mb-6 gap-1">
+      <div className="flex rounded-2xl bg-gray-100 p-1 mb-6 gap-1 max-w-2xl mx-auto">
         <TabButton
           active={tab === 'mansion'}
           onClick={() => switchTab('mansion')}
@@ -106,7 +106,7 @@ function TabButton({
 
 function SubsidyPanel() {
   return (
-    <>
+    <div className="max-w-2xl mx-auto">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
         <SearchForm />
       </div>
@@ -119,7 +119,7 @@ function SubsidyPanel() {
         </Link>
         <p className="text-xs text-gray-400 mt-2">2〜3つのエリアの支援制度を並べて比較できます</p>
       </div>
-    </>
+    </div>
   )
 }
 
@@ -137,7 +137,7 @@ function NurseryPanel() {
   ]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-2xl mx-auto">
       {/* 免責事項 */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 flex gap-2">
         <span className="shrink-0">⚠️</span>

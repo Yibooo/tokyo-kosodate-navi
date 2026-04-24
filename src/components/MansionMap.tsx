@@ -10,7 +10,7 @@ const MansionMapInner = dynamic(
     loading: () => (
       <div
         className="flex items-center justify-center bg-gray-100 rounded-b-2xl text-gray-400 text-sm"
-        style={{ height: '480px' }}
+        style={{ height: '620px' }}
       >
         <div className="text-center">
           <div className="text-3xl mb-3 animate-pulse">🗺️</div>

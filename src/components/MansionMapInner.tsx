@@ -211,7 +211,7 @@ export default function MansionMapInner({ mansions }: Props) {
       <MapContainer
         center={TOKYO_CENTER}
         zoom={12}
-        style={{ height: '480px', width: '100%', borderRadius: '0 0 1rem 1rem' }}
+        style={{ height: '620px', width: '100%', borderRadius: '0 0 1rem 1rem' }}
         scrollWheelZoom={true}
       >
         <TileLayer

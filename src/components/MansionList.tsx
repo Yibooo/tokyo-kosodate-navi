@@ -108,14 +108,14 @@ export default function MansionList({ mansions }: Props) {
 
       {/* 横スクロールテーブル */}
       <div className="overflow-x-auto">
-        <table className="border-collapse text-sm" style={{ minWidth: `${180 + mansions.length * 168}px` }}>
+        <table className="border-collapse text-sm" style={{ minWidth: `${160 + mansions.length * 220}px` }}>
           {/* ヘッダー行：物件名 */}
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {/* 左固定ラベル列 */}
               <th
                 className="sticky left-0 z-20 bg-gray-50 text-left px-4 py-3 text-xs font-medium text-gray-400 border-r border-gray-200"
-                style={{ minWidth: '112px', maxWidth: '112px' }}
+                style={{ minWidth: '128px', maxWidth: '128px' }}
               >
                 項目
               </th>
@@ -125,13 +125,13 @@ export default function MansionList({ mansions }: Props) {
                 return (
                   <th
                     key={m.id}
-                    className="text-left px-3 py-3 font-semibold text-gray-800 border-r border-gray-100 last:border-r-0 align-top"
-                    style={{ minWidth: '168px', maxWidth: '168px' }}
+                    className="text-left px-4 py-4 font-semibold text-gray-800 border-r border-gray-100 last:border-r-0 align-top"
+                    style={{ minWidth: '220px', maxWidth: '220px' }}
                   >
-                    <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 mb-1.5">
+                    <div className="text-sm font-bold text-gray-800 leading-snug line-clamp-2 mb-2">
                       {m.name}
                     </div>
-                    <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${sc.bg} ${sc.color}`}>
+                    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${sc.bg} ${sc.color}`}>
                       {sc.pin} {sc.label}
                     </span>
                   </th>
@@ -145,12 +145,12 @@ export default function MansionList({ mansions }: Props) {
             {ROWS.map((row, ri) => (
               <tr
                 key={row.label}
-                className={`border-b border-gray-50 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}`}
+                className={`border-b border-gray-100 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
               >
                 {/* 左固定：属性ラベル */}
                 <td
-                  className={`sticky left-0 z-10 px-4 py-2.5 text-xs font-semibold text-gray-500 border-r border-gray-200 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                  style={{ minWidth: '112px', maxWidth: '112px' }}
+                  className={`sticky left-0 z-10 px-4 py-3.5 text-xs font-semibold text-gray-500 border-r border-gray-200 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                  style={{ minWidth: '128px', maxWidth: '128px' }}
                 >
                   {row.label}
                 </td>
@@ -158,8 +158,8 @@ export default function MansionList({ mansions }: Props) {
                 {mansions.map(m => (
                   <td
                     key={m.id}
-                    className="px-3 py-2.5 text-gray-700 border-r border-gray-50 last:border-r-0 align-top text-xs"
-                    style={{ minWidth: '168px', maxWidth: '168px' }}
+                    className="px-4 py-3.5 text-gray-700 border-r border-gray-100 last:border-r-0 align-top text-sm"
+                    style={{ minWidth: '220px', maxWidth: '220px' }}
                   >
                     {row.render(m)}
                   </td>
@@ -170,16 +170,16 @@ export default function MansionList({ mansions }: Props) {
             {/* 公式リンク行 */}
             <tr className="bg-gray-50 border-t border-gray-200">
               <td
-                className="sticky left-0 z-10 bg-gray-50 px-4 py-3 text-xs font-semibold text-gray-500 border-r border-gray-200"
-                style={{ minWidth: '112px', maxWidth: '112px' }}
+                className="sticky left-0 z-10 bg-gray-50 px-4 py-4 text-xs font-semibold text-gray-500 border-r border-gray-200"
+                style={{ minWidth: '128px', maxWidth: '128px' }}
               >
                 公式ページ
               </td>
               {mansions.map(m => (
                 <td
                   key={m.id}
-                  className="px-3 py-3 border-r border-gray-100 last:border-r-0"
-                  style={{ minWidth: '168px', maxWidth: '168px' }}
+                  className="px-4 py-4 border-r border-gray-100 last:border-r-0"
+                  style={{ minWidth: '220px', maxWidth: '220px' }}
                 >
                   <Link
                     href={m.url}
