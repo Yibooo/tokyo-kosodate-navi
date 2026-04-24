@@ -52,6 +52,41 @@ export const WARD_CODES: Record<string, string> = {
 }
 
 // =============================================
+// 駅情報テキストのパース
+// =============================================
+
+/**
+ * 一覧ページの .bundle_detail から取得した駅テキストをパース
+ * Format 1: "西武新宿線/都立家政 徒歩8分"
+ * Format 2: "東急東横線「自由が丘」歩10分"
+ */
+function parseStationText(text: string | null): {
+  station_line: string | null
+  nearest_station: string | null
+  walk_minutes: number | null
+} {
+  const none = { station_line: null, nearest_station: null, walk_minutes: null }
+  if (!text) return none
+
+  // 全角数字→半角
+  const s = text.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+
+  // Format 1: "線名/駅名 徒歩N分"
+  const m1 = s.match(/^(.+?)[/／](.+?)\s*徒歩(\d+)分/)
+  if (m1) return { station_line: m1[1].trim(), nearest_station: m1[2].trim(), walk_minutes: parseInt(m1[3]) }
+
+  // Format 2: "線名「駅名」徒歩N分" or "線名「駅名」歩N分"
+  const m2 = s.match(/^(.+?)「(.+?)」(?:徒歩|歩)(\d+)分/)
+  if (m2) return { station_line: m2[1].trim() || null, nearest_station: m2[2].trim(), walk_minutes: parseInt(m2[3]) }
+
+  // Format 3: "駅名 徒歩N分"（沿線名なし）
+  const m3 = s.match(/^(.+?)\s+徒歩(\d+)分/)
+  if (m3) return { station_line: null, nearest_station: m3[1].trim(), walk_minutes: parseInt(m3[2]) }
+
+  return none
+}
+
+// =============================================
 // HTML フェッチ ユーティリティ
 // =============================================
 async function fetchHtml(url: string): Promise<string | null> {
@@ -97,15 +132,20 @@ function cleanPropertyName(name: string): string {
     .trim()
 }
 
+type PropertyInfo = {
+  url: string
+  stationText: string | null
+}
+
 /**
- * 1区分の全ページを巡回し、ユニークな物件URL（nc_XXXXX）を返す
+ * 1区分の全ページを巡回し、ユニークな物件情報（URL + 駅情報）を返す
  * 同一マンションが複数ユニット掲載されることがあるため、物件名で重複除去
  */
 async function collectPropertyUrls(
   ward: string,
   wardCode: string,
-): Promise<Map<string, string>> {  // name → url
-  const nameToUrl = new Map<string, string>()
+): Promise<Map<string, PropertyInfo>> {  // name → PropertyInfo
+  const nameToInfo = new Map<string, PropertyInfo>()
   let page = 1
 
   while (true) {
@@ -121,13 +161,30 @@ async function collectPropertyUrls(
       const href = $(el).attr('href') ?? ''
       const rawName = $(el).text().trim()
       const name = cleanPropertyName(rawName)
-      if (isValidPropertyName(name) && href && !nameToUrl.has(name)) {
+      if (isValidPropertyName(name) && href && !nameToInfo.has(name)) {
         // https への統一・クエリパラメータの除去
         let fullUrl = href.startsWith('http') ? href : `${BASE_URL}${href}`
         fullUrl = fullUrl.replace(/^http:\/\//, 'https://')  // http → https
         fullUrl = fullUrl.replace(/\?.*$/, '')               // クエリパラム除去
         if (!fullUrl.endsWith('/')) fullUrl += '/'
-        nameToUrl.set(name, fullUrl)
+
+        // 一覧ページから駅情報を抽出
+        // 構造: a.cassette_header-title → div.cassette-content → div.cassette_basic-item
+        //        p.cassette_basic-title("交通") + p.cassette_basic-value("線名/駅名 徒歩N分")
+        let stationText: string | null = null
+        const $cassette = $(el).closest('.cassette-content, .property_unit, .cassette')
+        if ($cassette.length) {
+          $cassette.find('.cassette_basic-item').each((_, item) => {
+            const title = $(item).find('.cassette_basic-title').text().trim()
+            if (title === '交通') {
+              const val = $(item).find('.cassette_basic-value').text().replace(/\s+/g, ' ').trim()
+              if (val) stationText = val
+              return false  // break
+            }
+          })
+        }
+
+        nameToInfo.set(name, { url: fullUrl, stationText })
       }
       foundOnPage++
     })
@@ -140,7 +197,7 @@ async function collectPropertyUrls(
     await sleep(FETCH_DELAY)
   }
 
-  return nameToUrl
+  return nameToInfo
 }
 
 // =============================================
@@ -276,7 +333,7 @@ function extractWard(address: string): string | null {
 async function parseDetailPage(
   url:      string,
   fallbackWard: string,
-): Promise<Omit<MansionRecord, 'lat' | 'lng'> | null> {
+): Promise<Omit<MansionRecord, 'lat' | 'lng' | 'station_line' | 'nearest_station' | 'walk_minutes'> | null> {
   // 正規化: URLを nc_XXXXX/ の形式に統一
   const baseUrl = url
     .replace(/^http:\/\//, 'https://')    // http → https
@@ -392,6 +449,8 @@ async function parseDetailPage(
   }
 }
 
+
+
 // =============================================
 // メイン: 指定区のスクレイピング
 // =============================================
@@ -402,19 +461,21 @@ export async function scrapeWard(
 ): Promise<MansionRecord[]> {
   console.log(`\n🏙️  ${ward} スクレイピング開始...`)
 
-  // Step1: 一覧ページから物件URL収集
-  const nameToUrl = await collectPropertyUrls(ward, wardCode)
-  console.log(`  📋 ユニーク物件数: ${nameToUrl.size} 件`)
-  if (nameToUrl.size === 0) return []
+  // Step1: 一覧ページから物件URL・駅情報収集
+  const nameToInfo = await collectPropertyUrls(ward, wardCode)
+  console.log(`  📋 ユニーク物件数: ${nameToInfo.size} 件`)
+  if (nameToInfo.size === 0) return []
 
   await sleep(FETCH_DELAY)
 
   const records: MansionRecord[] = []
   let i = 0
 
-  for (const [name, url] of nameToUrl) {
+  for (const [name, info] of nameToInfo) {
+    const { url, stationText } = info
+    const stationParsed = parseStationText(stationText)
     i++
-    process.stdout.write(`  [${String(i).padStart(2)}/${nameToUrl.size}] ${name.slice(0, 28).padEnd(28)} `)
+    process.stdout.write(`  [${String(i).padStart(2)}/${nameToInfo.size}] ${name.slice(0, 28).padEnd(28)} `)
 
     // Step2: 詳細ページパース
     const partial = await parseDetailPage(url, ward)
@@ -475,11 +536,18 @@ export async function scrapeWard(
       lng = fb[1]
     }
 
-    const record: MansionRecord = { ...partial, lat, lng }
+    const record: MansionRecord = {
+      ...partial,
+      lat, lng,
+      ...stationParsed,
+    }
     records.push(record)
 
     const coordSrc = coords && lat !== fb[0] ? '✅' : '📍区中心'
-    process.stdout.write(`→ ${lat.toFixed(4)},${lng.toFixed(4)} ${coordSrc}\n`)
+    const stationLog = stationParsed.nearest_station
+      ? ` 🚉${stationParsed.nearest_station}${stationParsed.walk_minutes != null ? `徒歩${stationParsed.walk_minutes}分` : ''}`
+      : ''
+    process.stdout.write(`→ ${lat.toFixed(4)},${lng.toFixed(4)} ${coordSrc}${stationLog}\n`)
   }
 
   // 詳細ページで判明した物件名でさらに重複除去

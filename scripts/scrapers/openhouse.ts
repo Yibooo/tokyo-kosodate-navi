@@ -164,6 +164,9 @@ export async function scrapeOpenhouse(): Promise<MansionRecord[]> {
         disposer:        null,
         eco_type:        null,
         corridor:        null,
+        station_line:    null,
+        nearest_station: null,
+        walk_minutes:    null,
         url,
         updated_at:      TODAY,
       })

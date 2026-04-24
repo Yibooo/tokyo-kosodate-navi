@@ -168,6 +168,9 @@ async function main() {
       disposer:        e.disposer ?? null,
       eco_type:        e.eco_type ?? null,
       corridor:        e.corridor ?? null,
+      station_line:    null,
+      nearest_station: null,
+      walk_minutes:    null,
       url:             e.url!,
       updated_at:      TODAY,
     } satisfies MansionRecord))

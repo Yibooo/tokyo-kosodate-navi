@@ -41,6 +41,9 @@ function recordToTs(m: MansionRecord): string {
     disposer:        ${val(m.disposer)},
     eco_type:        ${val(m.eco_type)},
     corridor:        ${val(m.corridor)},
+    station_line:    ${val(m.station_line)},
+    nearest_station: ${val(m.nearest_station)},
+    walk_minutes:    ${val(m.walk_minutes)},
     url:             ${val(m.url)},
     updated_at:      ${val(m.updated_at)},
   }`
@@ -140,6 +143,9 @@ export interface MansionRecord {
   disposer:        boolean | null
   eco_type:        string | null
   corridor:        '内廊下' | '外廊下' | null
+  station_line:    string | null
+  nearest_station: string | null
+  walk_minutes:    number | null
   url:             string
   updated_at:      string
 }
