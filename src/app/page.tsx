@@ -67,6 +67,24 @@ export default function HomePage() {
             </div>
           ))}
         </div>
+
+        {/* アンケート誘導 */}
+        <div className="mt-10 text-center bg-indigo-50 border border-indigo-100 rounded-2xl px-6 py-8">
+          <div className="text-2xl mb-2">📝</div>
+          <p className="font-bold text-gray-800 mb-1">ご意見・ご要望をお聞かせください</p>
+          <p className="text-sm text-gray-500 mb-5">
+            より良いサービスにするため、ユーザーの声を集めています。<br className="hidden sm:inline" />
+            所要時間は約2〜3分です。
+          </p>
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLScajQMooX31sW5rMw8z7o6VjirEyceyfO9DLxaqiu_XUZpy-w/viewform?usp=publish-editor"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-7 py-3 rounded-xl text-sm transition shadow-md hover:shadow-lg"
+          >
+            アンケートに答える →
+          </a>
+        </div>
       </main>
 
       <footer className="text-center text-xs text-gray-400 py-8 border-t border-gray-100 mt-8">
