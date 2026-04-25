@@ -247,7 +247,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "池袋",
     walk_minutes:    10,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_toshima/nc_67730690/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67735585",
@@ -337,7 +337,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "四ツ谷",
     walk_minutes:    3,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_67734365/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67729707",
@@ -789,7 +789,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "西新宿",
     walk_minutes:    5,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_67734389/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67730177",
@@ -819,7 +819,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "江戸川橋",
     walk_minutes:    6,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_67730177/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67731932",
@@ -1211,7 +1211,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "半蔵門",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_chiyoda/nc_67733803/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67734943",
@@ -1241,7 +1241,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "半蔵門",
     walk_minutes:    8,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_chiyoda/nc_67734943/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67729886",
@@ -1451,7 +1451,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "新宿御苑前",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_67733757/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67730689",
@@ -1935,7 +1935,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "大岡山",
     walk_minutes:    6,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67731160/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67730674",
@@ -2815,7 +2815,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "半蔵門",
     walk_minutes:    2,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_chiyoda/nc_67734645/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67722499",
@@ -2845,7 +2845,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "半蔵門",
     walk_minutes:    8,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_chiyoda/nc_67722499/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67735095",
@@ -3357,7 +3357,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "半蔵門",
     walk_minutes:    8,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_chiyoda/nc_20127580/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20091814",
@@ -3417,7 +3417,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "半蔵門",
     walk_minutes:    3,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_chiyoda/nc_20663418/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20601193",
@@ -3447,7 +3447,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "四ツ谷",
     walk_minutes:    5,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_chiyoda/nc_20601193/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20178358",
@@ -6027,7 +6027,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "四谷三丁目",
     walk_minutes:    6,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_78905410/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc78972210",
@@ -6087,7 +6087,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "高田馬場",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_77959717/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20374290",
@@ -6117,7 +6117,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "高田馬場",
     walk_minutes:    10,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_20374290/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc78824510",
@@ -6147,7 +6147,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "高田馬場",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_78824510/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc78993703",
@@ -6177,7 +6177,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "高田馬場",
     walk_minutes:    8,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_78993703/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc78670489",
@@ -6207,7 +6207,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "高田馬場",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_78670489/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20560464",
@@ -6237,7 +6237,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "江戸川橋",
     walk_minutes:    3,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_20560464/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc79039048",
@@ -6267,7 +6267,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "西新宿五丁目",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_79039048/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20157020",
@@ -6297,7 +6297,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "曙橋",
     walk_minutes:    5,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_20157020/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20372665",
@@ -6327,7 +6327,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "四ツ谷",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_20372665/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20138837",
@@ -6387,7 +6387,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "新宿御苑前",
     walk_minutes:    4,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_76592094/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc78722825",
@@ -6867,7 +6867,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "大森",
     walk_minutes:    4,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_20433733/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc79218981",
@@ -7407,7 +7407,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "北池袋",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_toshima/nc_20124038/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20336419",
@@ -7437,7 +7437,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "大塚",
     walk_minutes:    3,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_toshima/nc_20336419/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc78704559",
@@ -7827,7 +7827,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "神田",
     walk_minutes:    3,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_chiyoda/nc_20684441/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20664230",
@@ -7857,7 +7857,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "東池袋",
     walk_minutes:    1,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_toshima/nc_20664230/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20682226",
@@ -8037,7 +8037,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "大森",
     walk_minutes:    4,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_20711310/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20044226",
@@ -8097,7 +8097,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "新宿御苑前",
     walk_minutes:    4,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_20721376/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc20706357",
@@ -8731,7 +8731,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "鵜の木",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67728109/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67723682",
@@ -8971,7 +8971,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "東池袋",
     walk_minutes:    1,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_toshima/nc_67727153/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67725228",
@@ -9247,7 +9247,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "高田馬場",
     walk_minutes:    9,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_67733465/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67729040",
@@ -9609,7 +9609,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "荏原町",
     walk_minutes:    6,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67736868/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67735227",
@@ -9855,7 +9855,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "牛込神楽坂",
     walk_minutes:    2,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_67733970/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
 
   // ===== モリモト =====
@@ -10067,7 +10067,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "四ツ谷",
     walk_minutes:    5,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_67733884/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
 
   // ===== サンウッド =====
@@ -10467,7 +10467,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "糀谷",
     walk_minutes:    10,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67733264/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67733954",
@@ -10715,7 +10715,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "東新宿",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_67736124/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
 
   // ===== リバイブル =====
@@ -10747,7 +10747,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "早稲田",
     walk_minutes:    7,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_shinjuku/nc_67736504/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67736503",
@@ -10993,7 +10993,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "久が原",
     walk_minutes:    4,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67733767/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
 
   // ===== 多摩建設 =====
@@ -11835,7 +11835,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "雑色",
     walk_minutes:    12,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67733983/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
 
   // ===== 京急グループ =====
@@ -11867,7 +11867,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "荏原町",
     walk_minutes:    9,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67731316/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67733745",
@@ -11929,7 +11929,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "池上",
     walk_minutes:    2,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67733968/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
   {
     id:              "suumo-nc67733969",
@@ -11959,7 +11959,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "千鳥町",
     walk_minutes:    1,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67733969/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
 
   // ===== ナイス =====
@@ -11991,7 +11991,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "池上",
     walk_minutes:    10,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_ota/nc_67731931/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
 
   // ===== クレアスライフ =====
@@ -12209,7 +12209,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "雑司が谷",
     walk_minutes:    2,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_toshima/nc_67734105/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
 
   // ===== ケーナイン =====
@@ -12241,7 +12241,7 @@ export const SEED_MANSIONS: MansionRecord[] = [
     nearest_station: "池袋",
     walk_minutes:    9,
     url:             "https://suumo.jp/ms/shinchiku/tokyo/sc_toshima/nc_67736543/",
-    updated_at:      "2026-04-24",
+    updated_at:      "2026-04-25",
   },
 
   // ===== ゴールドクレスト =====
