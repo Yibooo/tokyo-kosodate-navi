@@ -38,6 +38,7 @@ export default function MansionTab() {
   const [delivery, setDelivery] = useState<MansionFilter['delivery']>(null)
   const [units, setUnits]       = useState<MansionFilter['units']>(null)
   const [corridorOnly, setCorridorOnly] = useState(false)
+  const [walk, setWalk] = useState<number | null>(null)
 
   // フィルター適用後の物件一覧
   const filter: MansionFilter = {
@@ -45,11 +46,12 @@ export default function MansionTab() {
     delivery: delivery ?? undefined,
     units:    units ?? undefined,
     corridor: corridorOnly ? '内廊下' : null,
+    walk:     walk ?? undefined,
   }
   const mansions = useMemo(
     () => getMansionsByWard(ward, filter),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ward, selectedStatuses, delivery, units, corridorOnly],
+    [ward, selectedStatuses, delivery, units, corridorOnly, walk],
   )
 
   // ステータストグル
@@ -140,6 +142,17 @@ export default function MansionTab() {
             <option value="large">81戸以上</option>
           </select>
 
+          <select
+            value={walk ?? ''}
+            onChange={e => setWalk(e.target.value ? Number(e.target.value) : null)}
+            className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-300"
+          >
+            <option value="">駅徒歩：全て</option>
+            <option value="5">5分以内</option>
+            <option value="10">10分以内</option>
+            <option value="15">15分以内</option>
+          </select>
+
           <button
             onClick={() => setCorridorOnly(v => !v)}
             className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
@@ -152,13 +165,14 @@ export default function MansionTab() {
           </button>
 
           {/* リセット */}
-          {(delivery || units || corridorOnly || selectedStatuses.length < 3) && (
+          {(delivery || units || corridorOnly || walk || selectedStatuses.length < 3) && (
             <button
               onClick={() => {
                 setSelectedStatuses([...ALL_STATUSES])
                 setDelivery(null)
                 setUnits(null)
                 setCorridorOnly(false)
+                setWalk(null)
               }}
               className="text-xs text-gray-400 hover:text-gray-600 underline"
             >

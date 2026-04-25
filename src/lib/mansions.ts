@@ -18,6 +18,7 @@ export interface MansionFilter {
   delivery?: 'before2026' | '2026' | '2027' | '2028plus' | null
   units?:    'small' | 'mid' | 'large' | null              // ≤30 / 31-80 / 81+
   corridor?: '内廊下' | null                               // 内廊下のみ or 全て
+  walk?:     number | null                                  // 徒歩N分以内
 }
 
 // =============================================
@@ -89,6 +90,10 @@ function applyFilter(
 
   if (filter.corridor === '内廊下') {
     results = results.filter(m => m.corridor === '内廊下')
+  }
+
+  if (filter.walk) {
+    results = results.filter(m => m.walk_minutes === null || m.walk_minutes <= filter.walk!)
   }
 
   return results

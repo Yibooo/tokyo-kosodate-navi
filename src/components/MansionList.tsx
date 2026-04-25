@@ -34,6 +34,21 @@ const ROWS: RowDef[] = [
     render: m => <span className="text-xs">{m.address || '—'}</span>,
   },
   {
+    label:  '最寄駅',
+    render: m => {
+      if (!m.nearest_station) return '—'
+      return (
+        <span className="text-xs leading-relaxed">
+          {m.station_line && <span className="text-gray-400">{m.station_line}／</span>}
+          <span className="font-semibold">{m.nearest_station}</span>
+          {m.walk_minutes != null && (
+            <span className="ml-1 text-indigo-600 font-semibold">徒歩{m.walk_minutes}分</span>
+          )}
+        </span>
+      )
+    },
+  },
+  {
     label:  '階数',
     render: m => m.floors ? `${m.floors}階建て` : '—',
   },
